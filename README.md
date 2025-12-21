@@ -2,6 +2,16 @@
 
 A comprehensive platform for building phonologically-valid constructed languages with AI-powered features, alphabet-to-IPA mapping, and advanced lexicon management. Built with modern web technologies, AWS cloud infrastructure, and enterprise-grade backup and disaster recovery capabilities.
 
+## Badges
+
+### Build & CI/CD Workflow Status
+
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/pipeline.yml?branch=master&style=for-the-badge&label=Pipeline%20Build%20Workflow) 
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/docker.yml?branch=master&style=for-the-badge&label=Docker%20Workflow)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/pr-checks.yml?branch=master&style=for-the-badge&label=PR%20Check%20Workflow)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/security-scan.yml?branch=master&style=for-the-badge&label=Security%20Scan%20Workflow)
+
+
 ## 📋 Table of Contents
 
 - [Overview](#overview)
