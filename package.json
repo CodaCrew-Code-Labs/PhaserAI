@@ -102,9 +102,14 @@
     "lovable-tagger": "^1.1.7",
     "postcss": "^8.4.47",
     "prettier": "^3.4.2",
-    "tailwindcss": "^3.4.11",
+    "tailwindcss": "^3.4.19",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^7.3.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "glob@10.4.5": "^10.5.0"
+    }
   }
 }
