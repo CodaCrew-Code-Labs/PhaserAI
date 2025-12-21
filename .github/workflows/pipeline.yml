@@ -405,9 +405,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: build-test
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' || github.event_name == 'workflow_dispatch'
+    
+    permissions:
+      id-token: write   # Required for OIDC token requests
+      contents: read    # Required for actions/checkout
     
     steps:
+      - name: Debug Push Conditions
+        run: |
+          echo "🔍 Debugging ECR push conditions..."
+          echo "Event name: ${{ github.event_name }}"
+          echo "Git ref: ${{ github.ref }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Is main branch: ${{ github.ref == 'refs/heads/main' }}"
+          echo "Is master branch: ${{ github.ref == 'refs/heads/master' }}"
+          echo "Is develop branch: ${{ github.ref == 'refs/heads/develop' }}"
+          echo "Is workflow dispatch: ${{ github.event_name == 'workflow_dispatch' }}"
+          echo ""
+          echo "✅ ECR push job is running - conditions met!"
+      
       - name: Checkout Code
         uses: actions/checkout@v4
       
@@ -415,13 +432,13 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           # Option A: Using IAM User (requires AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY secrets)
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-          # Option B: Using IAM Role with OIDC (more secure, comment out above and uncomment below)
-          # role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          # role-session-name: GitHubActions-ECR-Push
+          # aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           # aws-region: ${{ env.AWS_REGION }}
+          # Option B: Using IAM Role with OIDC (more secure, comment out above and uncomment below)
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActions-ECR-Push
+          aws-region: ${{ env.AWS_REGION }}
       
       - name: Get ECR Repository URI
         id: ecr-info
@@ -713,7 +730,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: [build-test, infrastructure-validation, push-to-ecr]
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
     
     outputs:
       should-deploy: ${{ steps.deploy-check.outputs.should-deploy }}

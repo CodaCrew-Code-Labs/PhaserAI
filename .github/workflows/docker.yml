@@ -9,12 +9,15 @@
 # - Multi-platform builds (AMD64, ARM64)
 # - Development and production image variants
 # - Container security scanning
-# - Registry push (Docker Hub, ECR, GHCR)
+# - Registry push (GHCR, Docker Hub)
 # - Image optimization and caching
 # - Vulnerability scanning
 #
+# NOTE: ECR push is handled by the main pipeline workflow (pipeline.yml)
+#       to avoid duplicate pushes and maintain a single deployment pipeline.
+#
 # TRIGGERS:
-# - Push to main branch (build and push)
+# - Push to main branch (build and push to GHCR)
 # - Pull requests (build and test only)
 # - Manual dispatch with registry options
 # - Release tags (production builds)
@@ -261,8 +264,8 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.push_to_registry }}" = "true" ]; then
             echo "Manual dispatch with push enabled"
             SHOULD_PUSH=true
-          elif [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            echo "Push to main branch - will push to registry"
+          elif [ "${{ github.event_name }}" = "push" ] && ([ "${{ github.ref }}" = "refs/heads/main" ] || [ "${{ github.ref }}" = "refs/heads/master" ] || [ "${{ github.ref }}" = "refs/heads/develop" ]); then
+            echo "Push to main/master/develop branch - will push to registry"
             SHOULD_PUSH=true
           elif [ "${{ github.event_name }}" = "push" ] && [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             echo "Release tag - will push to registry"
@@ -408,7 +411,7 @@ jobs:
     
     strategy:
       matrix:
-        registry: [ghcr, ecr]  # Added ECR to the matrix
+        registry: [ghcr]  # Removed ECR to avoid conflicts with main pipeline
     
     steps:
       - name: Checkout Code
@@ -433,18 +436,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       
-      - name: Configure AWS Credentials for ECR
-        if: matrix.registry == 'ecr'
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-      
-      - name: Log in to Amazon ECR
-        if: matrix.registry == 'ecr'
-        uses: aws-actions/amazon-ecr-login@v2
-      
       - name: Extract Metadata for Registry
         id: meta
         uses: docker/metadata-action@v5
@@ -452,7 +443,6 @@ jobs:
           images: |
             ${{ matrix.registry == 'ghcr' && format('{0}/{1}/{2}', env.REGISTRY_GHCR, github.repository, env.IMAGE_NAME) || '' }}
             ${{ matrix.registry == 'dockerhub' && format('{0}/{1}/{2}', env.REGISTRY_DOCKERHUB, github.repository_owner, env.IMAGE_NAME) || '' }}
-            ${{ matrix.registry == 'ecr' && format('{0}.dkr.ecr.{1}.amazonaws.com/{2}', secrets.AWS_ACCOUNT_ID, env.AWS_REGION, env.ECR_REPOSITORY) || '' }}
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
