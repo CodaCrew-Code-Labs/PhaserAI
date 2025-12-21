@@ -35,7 +35,7 @@ export class BackupStack extends cdk.Stack {
 
     this.backupBucket = new s3.Bucket(this, 'BackupBucket', {
       bucketName: `${appName}-${environment}-database-backups`,
-      versioning: true,
+      versioned: true,
       encryption: s3.BucketEncryption.S3_MANAGED,
       lifecycleRules: [
         {

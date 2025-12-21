@@ -70,11 +70,26 @@ jobs:
       - name: Check Formatting
         run: |
           echo "🎨 Checking code formatting..."
-          pnpm run format:check || {
+          
+          # Ensure prettier is available
+          if ! command -v prettier &> /dev/null; then
+            echo "⚠️ Prettier not found in PATH, trying pnpm exec..."
+            if pnpm exec prettier --version > /dev/null 2>&1; then
+              echo "✅ Prettier available via pnpm exec"
+            else
+              echo "❌ Prettier not available - installing..."
+              pnpm install
+            fi
+          fi
+          
+          # Run format check
+          if pnpm run format:check; then
+            echo "✅ Code formatting check passed"
+          else
             echo "❌ Code formatting issues found"
-            echo "Run 'pnpm run format' to fix"
+            echo "💡 Run 'pnpm run format' to fix formatting issues"
             exit 1
-          }
+          fi
       
       - name: Quick Lint
         run: |

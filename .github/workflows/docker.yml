@@ -142,6 +142,18 @@ jobs:
           pnpm run lint
           echo "✅ Lint checks passed"
       
+      - name: Check Code Formatting for Docker Build
+        run: |
+          echo "🎨 Checking code formatting before Docker build..."
+          if pnpm run format:check; then
+            echo "✅ Code formatting check passed"
+          else
+            echo "⚠️ Code formatting issues found"
+            echo "💡 Run 'pnpm run format' to fix formatting issues"
+            # Continue with build but warn about formatting
+          fi
+        continue-on-error: true
+      
       - name: Type Check for Docker Build
         run: |
           echo "🔍 Running type checks before Docker build..."

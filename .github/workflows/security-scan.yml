@@ -176,23 +176,50 @@ jobs:
         run: |
           echo "🔍 Analyzing CDK infrastructure security..."
           
-          # Synthesize templates for analysis
-          npx cdk synth --all --quiet
+          # Install dependencies and synthesize templates
+          npm ci
           
-          # Check for security issues
+          echo "Synthesizing CDK templates for analysis..."
+          if npm run synth > cdk-synth.log 2>&1; then
+            echo "✅ CDK synthesis completed"
+          else
+            echo "❌ CDK synthesis failed"
+            cat cdk-synth.log
+            exit 1
+          fi
+          
+          # Security analysis
+          echo "Running security checks on generated templates..."
+          
           echo "Checking for public access..."
-          if grep -r "0.0.0.0/0" cdk.out/ --include="*.json"; then
-            echo "⚠️ Public access detected - review security groups"
+          if grep -r "0.0.0.0/0" cdk.out/ --include="*.json" | head -10; then
+            echo "⚠️ Public access detected - review security groups above"
+          else
+            echo "✅ No unrestricted public access found"
           fi
           
           echo "Checking for unencrypted resources..."
-          if grep -r "Encrypted.*false" cdk.out/ --include="*.json"; then
-            echo "⚠️ Unencrypted resources found"
+          if grep -r "Encrypted.*false" cdk.out/ --include="*.json" | head -10; then
+            echo "⚠️ Unencrypted resources found - review above"
+          else
+            echo "✅ All resources appear to be encrypted"
           fi
           
           echo "Checking for hardcoded values..."
-          if grep -rE "(password|secret|key).*:" cdk.out/ --include="*.json" | grep -v "Ref\|GetAtt\|Parameter"; then
-            echo "⚠️ Potential hardcoded secrets in infrastructure"
+          if grep -rE "(password|secret|key).*:" cdk.out/ --include="*.json" | grep -v "Ref\|GetAtt\|Parameter" | head -10; then
+            echo "⚠️ Potential hardcoded secrets in infrastructure - review above"
+          else
+            echo "✅ No hardcoded secrets detected"
+          fi
+          
+          echo "Checking for overly permissive IAM policies..."
+          if grep -r "\"Effect\": \"Allow\"" cdk.out/ --include="*.json" | grep -c "\"Resource\": \"\\*\"" || echo "0"; then
+            WILDCARD_COUNT=$(grep -r "\"Effect\": \"Allow\"" cdk.out/ --include="*.json" | grep -c "\"Resource\": \"\\*\"" || echo "0")
+            if [ "$WILDCARD_COUNT" -gt 0 ]; then
+              echo "⚠️ Found $WILDCARD_COUNT IAM policies with wildcard resources - review for least privilege"
+            else
+              echo "✅ No overly permissive IAM policies detected"
+            fi
           fi
           
           echo "✅ Infrastructure security analysis completed"

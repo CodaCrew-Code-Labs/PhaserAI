@@ -28,6 +28,7 @@
     "layer:verify": "cd lambda-layers/psycopg2 && ./verify-deployment.sh"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
     "@types/node": "^25.0.3",
     "@types/pg": "^8.10.0",
     "aws-cdk": "^2.170.0",

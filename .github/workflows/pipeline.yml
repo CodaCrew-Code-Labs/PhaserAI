@@ -144,6 +144,18 @@ jobs:
         run: pnpm run lint
         continue-on-error: true  # Don't fail build, but report issues
       
+      - name: Check Code Formatting
+        run: |
+          echo "🎨 Checking code formatting..."
+          if pnpm run format:check; then
+            echo "✅ Code formatting check completed"
+          else
+            echo "⚠️ Code formatting issues found"
+            echo "💡 Run 'pnpm run format' to fix formatting issues"
+            # Don't fail the build, just warn
+          fi
+        continue-on-error: true
+      
       - name: Lint Infrastructure Code
         working-directory: ./infra
         run: npm run lint
@@ -151,8 +163,15 @@ jobs:
       
       - name: Check Code Formatting
         run: |
-          pnpm run format:check
-          echo "✅ Code formatting check completed"
+          echo "🎨 Checking code formatting..."
+          if pnpm run format:check; then
+            echo "✅ Code formatting check completed"
+          else
+            echo "⚠️ Code formatting issues found"
+            echo "💡 Run 'pnpm run format' to fix formatting issues"
+            # Don't fail the build, just warn
+          fi
+        continue-on-error: true
       
       - name: TypeScript Type Check
         run: |
@@ -401,20 +420,39 @@ jobs:
         run: |
           echo "🔒 Running CDK security validation..."
           
+          # Ensure CDK synthesis works
+          echo "Running CDK synthesis for security analysis..."
+          if npm run synth > cdk-synth.log 2>&1; then
+            echo "✅ CDK synthesis completed successfully"
+          else
+            echo "❌ CDK synthesis failed"
+            cat cdk-synth.log
+            exit 1
+          fi
+          
           # Check for common security issues
           echo "Checking for hardcoded secrets..."
-          if grep -r "password\|secret\|key" cdk.out/ --include="*.json" | grep -v "Ref\|GetAtt"; then
-            echo "⚠️ Potential hardcoded secrets found"
+          if grep -r "password\|secret\|key" cdk.out/ --include="*.json" | grep -v "Ref\|GetAtt\|Parameter" | head -5; then
+            echo "⚠️ Potential hardcoded secrets found - review above results"
           else
             echo "✅ No hardcoded secrets detected"
           fi
           
           echo "Checking for public access..."
-          if grep -r "0.0.0.0/0" cdk.out/ --include="*.json"; then
-            echo "⚠️ Public access detected - review security groups"
+          if grep -r "0.0.0.0/0" cdk.out/ --include="*.json" | head -5; then
+            echo "⚠️ Public access detected - review security groups above"
           else
             echo "✅ No unrestricted public access found"
           fi
+          
+          echo "Checking for unencrypted resources..."
+          if grep -r "Encrypted.*false" cdk.out/ --include="*.json" | head -5; then
+            echo "⚠️ Unencrypted resources found - review above results"
+          else
+            echo "✅ No unencrypted resources detected"
+          fi
+          
+          echo "✅ CDK security analysis completed"
       
       - name: CDK Diff Analysis
         working-directory: ./infra

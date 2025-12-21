@@ -120,7 +120,7 @@ export class LambdaMigrationRunner {
     const result = await this.client.query(
       'SELECT version FROM schema_migrations ORDER BY version'
     );
-    return result.rows.map(row => row.version);
+    return result.rows.map((row: { version: string }) => row.version);
   }
 
   getMigrationFiles(): Migration[] {
@@ -374,15 +374,16 @@ export const handler: Handler<MigrationEvent, MigrationResponse> = async (event)
     await runner.connect();
     
     switch (event.action) {
-      case 'up':
+      case 'up': {
         const appliedMigrations = await runner.runMigrations(event.version, event.dryRun);
         return {
           success: true,
           message: `Applied ${appliedMigrations.length} migration(s)`,
           appliedMigrations
         };
+      }
         
-      case 'status':
+      case 'status': {
         const status = await runner.getMigrationStatus();
         return {
           success: true,
@@ -390,6 +391,7 @@ export const handler: Handler<MigrationEvent, MigrationResponse> = async (event)
           appliedMigrations: status.applied,
           pendingMigrations: status.pending
         };
+      }
         
       default:
         return {
