@@ -2,64 +2,6 @@
 
 A comprehensive platform for building phonologically-valid constructed languages with AI-powered features, alphabet-to-IPA mapping, and advanced lexicon management. Built with modern web technologies, AWS cloud infrastructure, and enterprise-grade backup and disaster recovery capabilities.
 
-## Badges
-
-### Build & CI/CD Workflow Status
-
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/pipeline.yml?branch=master&style=for-the-badge&label=Pipeline%20Build%20Workflow) 
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/docker.yml?branch=master&style=for-the-badge&label=Docker%20Workflow)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/pr-checks.yml?branch=master&style=for-the-badge&label=PR%20Check%20Workflow)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/security-scan.yml?branch=master&style=for-the-badge&label=Security%20Scan%20Workflow)
-
-
-### Development & Contribution
-![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)
-![Issues](https://img.shields.io/github/issues/CodaCrew-Code-Labs/phaserai?style=for-the-badge)
-![Contributors](https://img.shields.io/github/contributors/CodaCrew-Code-Labs/phaserai?style=for-the-badge)
-![Last Commit](https://img.shields.io/github/last-commit/CodaCrew-Code-Labs/phaserai?style=for-the-badge)
-
-### Code Quality & Security
-Snyk - [Link](https://app.snyk.io/org/codacrew-code-labs/projects?groupBy=targets&before&after&searchQuery=&sortBy=highest+severity&filters[Show]=&filters[Integrations]=&filters[CollectionIds]=)
-
-![CodeFactor Grade (with branch)](https://img.shields.io/codefactor/grade/github/CodaCrew-Code-Labs/PhaserAI/master?style=for-the-badge&label=CodeFactor)
-![Codacy grade (branch)](https://img.shields.io/codacy/grade/d956f279c0664cac90e371d00c33d28f/master?style=for-the-badge&label=Codacy%20Grade)
-![Dependabot](https://img.shields.io/badge/dependabot-enabled-brightgreen?style=for-the-badge)
-
-### Specialized Features
-
-![AI Powered](https://img.shields.io/badge/AI-OpenAI%20GPT-412991?logo=openai&style=for-the-badge)
-![IPA Support](https://img.shields.io/badge/IPA-Phoneme%20Validation-blue?style=for-the-badge)
-![Multi-language](https://img.shields.io/badge/i18n-Multi--language-green?style=for-the-badge)
-![Accessibility](https://img.shields.io/badge/a11y-WCAG%202.1-blue?style=for-the-badge)
-
-### Technology Stack
-
-![React](https://img.shields.io/badge/React-19.2.3-61DAFB?logo=react&style=for-the-badge)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-3178C6?logo=typescript&style=for-the-badge)
-![Vite](https://img.shields.io/badge/Vite-7.3.0-646CFF?logo=vite&style=for-the-badge)
-![AWS CDK](https://img.shields.io/badge/AWS%20CDK-2.170.0-FF9900?logo=amazonaws&style=for-the-badge)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15.8-336791?logo=postgresql&style=for-the-badge)
-![Docker](https://img.shields.io/badge/Docker-enabled-2496ED?logo=docker&style=for-the-badge)
-
-
-### Package Management & Dependencies
-![pnpm](https://img.shields.io/badge/pnpm-8.10.0-F69220?logo=pnpm&style=for-the-badge)
-![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&style=for-the-badge)
-![Dependencies](https://img.shields.io/librariesio/github/codacrew-code-labs/phaserai?style=for-the-badge)
-![Package Manager](https://img.shields.io/badge/package%20manager-pnpm-F69220?style=for-the-badge)
-
-### License & Legal
-![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge)
-![GDPR Compliant](https://img.shields.io/badge/GDPR-Compliant-green?style=for-the-badge)
-![SOX Compliant](https://img.shields.io/badge/SOX-Compliant-blue?style=for-the-badge)
-
-### Deployment & Infrastructure
-
-![AWS](https://img.shields.io/badge/AWS-Serverless-FF9900?logo=amazonaws&style=for-the-badge)
-![Infrastructure as Code](https://img.shields.io/badge/IaC-AWS%20CDK-FF9900?style=for-the-badge)
-![Backup Strategy](https://img.shields.io/badge/Backup-Automated-green?style=for-the-badge)
-![Disaster Recovery](https://img.shields.io/badge/DR-4h%20RTO-orange?style=for-the-badge)
-
 
 ## 📋 Table of Contents
 
@@ -392,6 +334,64 @@ npx tsc --noEmit
 # Watch mode
 npx tsc --noEmit --watch
 ```
+
+## Badges
+
+### Build & CI/CD Workflow Status
+
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/pipeline.yml?branch=master&style=for-the-badge&label=Pipeline%20Build%20Workflow) 
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/docker.yml?branch=master&style=for-the-badge&label=Docker%20Workflow)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/pr-checks.yml?branch=master&style=for-the-badge&label=PR%20Check%20Workflow)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/security-scan.yml?branch=master&style=for-the-badge&label=Security%20Scan%20Workflow)
+
+
+### Development & Contribution
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)
+![Issues](https://img.shields.io/github/issues/CodaCrew-Code-Labs/phaserai?style=for-the-badge)
+![Contributors](https://img.shields.io/github/contributors/CodaCrew-Code-Labs/phaserai?style=for-the-badge)
+![Last Commit](https://img.shields.io/github/last-commit/CodaCrew-Code-Labs/phaserai?style=for-the-badge)
+
+### Code Quality & Security
+Snyk - [Link](https://app.snyk.io/org/codacrew-code-labs/projects?groupBy=targets&before&after&searchQuery=&sortBy=highest+severity&filters[Show]=&filters[Integrations]=&filters[CollectionIds]=)
+
+![CodeFactor Grade (with branch)](https://img.shields.io/codefactor/grade/github/CodaCrew-Code-Labs/PhaserAI/master?style=for-the-badge&label=CodeFactor)
+![Codacy grade (branch)](https://img.shields.io/codacy/grade/d956f279c0664cac90e371d00c33d28f/master?style=for-the-badge&label=Codacy%20Grade)
+![Dependabot](https://img.shields.io/badge/dependabot-enabled-brightgreen?style=for-the-badge)
+
+### Specialized Features
+
+![AI Powered](https://img.shields.io/badge/AI-OpenAI%20GPT-412991?logo=openai&style=for-the-badge)
+![IPA Support](https://img.shields.io/badge/IPA-Phoneme%20Validation-blue?style=for-the-badge)
+![Multi-language](https://img.shields.io/badge/i18n-Multi--language-green?style=for-the-badge)
+![Accessibility](https://img.shields.io/badge/a11y-WCAG%202.1-blue?style=for-the-badge)
+
+### Technology Stack
+
+![React](https://img.shields.io/badge/React-19.2.3-61DAFB?logo=react&style=for-the-badge)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.5.3-3178C6?logo=typescript&style=for-the-badge)
+![Vite](https://img.shields.io/badge/Vite-7.3.0-646CFF?logo=vite&style=for-the-badge)
+![AWS CDK](https://img.shields.io/badge/AWS%20CDK-2.170.0-FF9900?logo=amazonaws&style=for-the-badge)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15.8-336791?logo=postgresql&style=for-the-badge)
+![Docker](https://img.shields.io/badge/Docker-enabled-2496ED?logo=docker&style=for-the-badge)
+
+
+### Package Management & Dependencies
+![pnpm](https://img.shields.io/badge/pnpm-8.10.0-F69220?logo=pnpm&style=for-the-badge)
+![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&style=for-the-badge)
+![Dependencies](https://img.shields.io/librariesio/github/codacrew-code-labs/phaserai?style=for-the-badge)
+![Package Manager](https://img.shields.io/badge/package%20manager-pnpm-F69220?style=for-the-badge)
+
+### License & Legal
+![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=for-the-badge)
+![GDPR Compliant](https://img.shields.io/badge/GDPR-Compliant-green?style=for-the-badge)
+![SOX Compliant](https://img.shields.io/badge/SOX-Compliant-blue?style=for-the-badge)
+
+### Deployment & Infrastructure
+
+![AWS](https://img.shields.io/badge/AWS-Serverless-FF9900?logo=amazonaws&style=for-the-badge)
+![Infrastructure as Code](https://img.shields.io/badge/IaC-AWS%20CDK-FF9900?style=for-the-badge)
+![Backup Strategy](https://img.shields.io/badge/Backup-Automated-green?style=for-the-badge)
+![Disaster Recovery](https://img.shields.io/badge/DR-4h%20RTO-orange?style=for-the-badge)
 
 ## 🏗️ Infrastructure
 
