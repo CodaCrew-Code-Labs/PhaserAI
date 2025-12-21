@@ -89,17 +89,17 @@ print_info "Verification started at: $(date)"
 
 # Helper function to increment counters
 pass_check() {
-    ((CHECKS_PASSED++))
+    CHECKS_PASSED=$((CHECKS_PASSED + 1))
     print_success "$1"
 }
 
 fail_check() {
-    ((CHECKS_FAILED++))
+    CHECKS_FAILED=$((CHECKS_FAILED + 1))
     print_error "$1"
 }
 
 warn_check() {
-    ((CHECKS_WARNING++))
+    CHECKS_WARNING=$((CHECKS_WARNING + 1))
     print_warning "$1"
 }
 
@@ -287,7 +287,7 @@ print_check "Verifying file permissions..."
 UNREADABLE_FILES=0
 while IFS= read -r -d '' file; do
     if [ ! -r "$file" ]; then
-        ((UNREADABLE_FILES++))
+        UNREADABLE_FILES=$((UNREADABLE_FILES + 1))
     fi
 done < <(find "$LAYER_DIR/python" -type f -print0)
 
@@ -303,9 +303,9 @@ if [ -n "$SO_FILES" ]; then
     EXECUTABLE_SO=0
     TOTAL_SO=0
     while IFS= read -r so_file; do
-        ((TOTAL_SO++))
+        TOTAL_SO=$((TOTAL_SO + 1))
         if [ -x "$so_file" ]; then
-            ((EXECUTABLE_SO++))
+            EXECUTABLE_SO=$((EXECUTABLE_SO + 1))
         fi
     done <<< "$SO_FILES"
     
