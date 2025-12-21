@@ -12,12 +12,25 @@ A comprehensive platform for building phonologically-valid constructed languages
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/security-scan.yml?branch=master&style=for-the-badge&label=Security%20Scan%20Workflow)
 
 
-### Code Quality & Security
+### Development & Contribution
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)
+![Issues](https://img.shields.io/github/issues/CodaCrew-Code-Labs/phaserai?style=for-the-badge)
+![Contributors](https://img.shields.io/github/contributors/CodaCrew-Code-Labs/phaserai?style=for-the-badge)
+![Last Commit](https://img.shields.io/github/last-commit/CodaCrew-Code-Labs/phaserai?style=for-the-badge)
 
+### Code Quality & Security
 Snyk - [Link](https://app.snyk.io/org/codacrew-code-labs/projects?groupBy=targets&before&after&searchQuery=&sortBy=highest+severity&filters[Show]=&filters[Integrations]=&filters[CollectionIds]=)
 
 ![CodeFactor Grade (with branch)](https://img.shields.io/codefactor/grade/github/CodaCrew-Code-Labs/PhaserAI/master?style=for-the-badge&label=CodeFactor)
 ![Codacy grade (branch)](https://img.shields.io/codacy/grade/d956f279c0664cac90e371d00c33d28f/master?style=for-the-badge&label=Codacy%20Grade)
+![Dependabot](https://img.shields.io/badge/dependabot-enabled-brightgreen?style=for-the-badge)
+
+### Specialized Features
+
+![AI Powered](https://img.shields.io/badge/AI-OpenAI%20GPT-412991?logo=openai&style=for-the-badge)
+![IPA Support](https://img.shields.io/badge/IPA-Phoneme%20Validation-blue?style=for-the-badge)
+![Multi-language](https://img.shields.io/badge/i18n-Multi--language-green?style=for-the-badge)
+![Accessibility](https://img.shields.io/badge/a11y-WCAG%202.1-blue?style=for-the-badge)
 
 ### Technology Stack
 
