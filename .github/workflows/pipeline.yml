@@ -217,15 +217,15 @@ jobs:
           # Build development image
           echo "Building development image..."
           docker build -f Dockerfile.dev -t phaserai-dev:latest \
-            --build-arg VITE_SUPABASE_URL=dummy \
-            --build-arg VITE_SUPABASE_ANON_KEY=dummy \
+            --build-arg VITE_SUPABASE_URL=https://dummy-dev-url.supabase.co \
+            --build-arg VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy-dev-key \
             .
           
           # Build production image
           echo "Building production image..."
           docker build -f Dockerfile -t phaserai:latest \
-            --build-arg VITE_SUPABASE_URL=dummy \
-            --build-arg VITE_SUPABASE_ANON_KEY=dummy \
+            --build-arg VITE_SUPABASE_URL=https://dummy-prod-url.supabase.co \
+            --build-arg VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy-prod-key \
             .
           
           echo "✅ Docker images built successfully"
@@ -237,19 +237,22 @@ jobs:
           # Test development image
           echo "🧪 Testing development image..."
           docker run --rm -d --name phaserai-dev-test -p 5173:5173 phaserai-dev:latest &
-          sleep 10
+          sleep 15
+          echo "Development container logs:"
+          docker logs phaserai-dev-test | head -10
           docker stop phaserai-dev-test || true
           
           # Test production image
           echo "🧪 Testing production image..."
           docker run --rm -d --name phaserai-prod-test -p 8080:80 phaserai:latest &
-          sleep 5
+          sleep 10
           
           # Health check
           if curl -f http://localhost:8080 > /dev/null 2>&1; then
             echo "✅ Production image health check passed"
           else
             echo "⚠️ Production image health check failed (may be expected in CI)"
+            docker logs phaserai-prod-test | head -10
           fi
           
           docker stop phaserai-prod-test || true

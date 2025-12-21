@@ -1,16 +1,8 @@
 # Build stage
-FROM node:25-alpine AS builder
+FROM node:18-alpine AS builder
 
-# Build arguments for environment variables
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_ANON_KEY
-
-# Set environment variables
-ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
-ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
-
-# Enable pnpm
-RUN corepack enable pnpm
+# Install pnpm globally
+RUN npm install -g pnpm@8.10.0
 
 WORKDIR /app
 

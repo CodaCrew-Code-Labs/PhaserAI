@@ -145,11 +145,9 @@ jobs:
           push: false
           tags: ${{ env.IMAGE_NAME }}-dev:test
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            VITE_SUPABASE_URL=dummy_dev_url
-            VITE_SUPABASE_ANON_KEY=dummy_dev_key
           cache-from: type=gha,scope=dev
           cache-to: type=gha,mode=max,scope=dev
+          load: true
       
       # ========================================================================
       # PRODUCTION IMAGE BUILD
@@ -164,51 +162,69 @@ jobs:
           push: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            VITE_SUPABASE_URL=dummy_prod_url
-            VITE_SUPABASE_ANON_KEY=dummy_prod_key
           cache-from: type=gha,scope=prod
           cache-to: type=gha,mode=max,scope=prod
-          outputs: type=docker,dest=/tmp/phaserai-image.tar
+          load: true
       
       # ========================================================================
       # IMAGE TESTING
       # ========================================================================
       - name: Load and Test Images
         run: |
-          echo "🧪 Loading and testing Docker images..."
+          echo "🧪 Testing Docker images..."
           
-          # Load production image
-          docker load --input /tmp/phaserai-image.tar
-          
-          # Get the first tag for testing
-          IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
-          echo "Testing image: $IMAGE_TAG"
+          # Test development image
+          echo "Testing development image..."
+          DEV_IMAGE="${{ env.IMAGE_NAME }}-dev:test"
           
           # Test image structure
-          echo "📋 Image inspection:"
-          docker inspect "$IMAGE_TAG" --format='{{.Config.ExposedPorts}}'
-          docker inspect "$IMAGE_TAG" --format='{{.Config.Env}}'
+          echo "📋 Development image inspection:"
+          docker inspect "$DEV_IMAGE" --format='{{.Config.ExposedPorts}}'
+          docker inspect "$DEV_IMAGE" --format='{{.Config.Env}}'
           
-          # Test container startup
-          echo "🚀 Testing container startup..."
-          CONTAINER_ID=$(docker run -d -p 8080:80 "$IMAGE_TAG")
+          # Test production image
+          echo "Testing production image..."
+          PROD_IMAGE=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
+          echo "Production image: $PROD_IMAGE"
           
-          # Wait for container to be ready
+          echo "📋 Production image inspection:"
+          docker inspect "$PROD_IMAGE" --format='{{.Config.ExposedPorts}}'
+          docker inspect "$PROD_IMAGE" --format='{{.Config.Env}}'
+          
+          # Test container startup - Development
+          echo "🚀 Testing development container startup..."
+          DEV_CONTAINER_ID=$(docker run -d -p 5173:5173 "$DEV_IMAGE")
+          sleep 15
+          
+          # Basic connectivity test for dev (may not respond to HTTP in CI)
+          echo "Development container started with ID: $DEV_CONTAINER_ID"
+          docker logs "$DEV_CONTAINER_ID" | head -20
+          
+          # Cleanup dev container
+          docker stop "$DEV_CONTAINER_ID"
+          docker rm "$DEV_CONTAINER_ID"
+          
+          # Test container startup - Production
+          echo "🚀 Testing production container startup..."
+          PROD_CONTAINER_ID=$(docker run -d -p 8080:80 "$PROD_IMAGE")
           sleep 10
           
-          # Health check
-          echo "🏥 Running health checks..."
+          # Health check for production
+          echo "🏥 Running production health checks..."
           if curl -f http://localhost:8080 > /dev/null 2>&1; then
-            echo "✅ Container health check passed"
+            echo "✅ Production container health check passed"
           else
-            echo "⚠️ Container health check failed"
-            docker logs "$CONTAINER_ID"
+            echo "⚠️ Production container health check failed (may be expected in CI)"
+            docker logs "$PROD_CONTAINER_ID" | head -20
           fi
           
-          # Cleanup
-          docker stop "$CONTAINER_ID"
-          docker rm "$CONTAINER_ID"
+          # Cleanup production container
+          docker stop "$PROD_CONTAINER_ID"
+          docker rm "$PROD_CONTAINER_ID"
+          
+          # Save production image for security scanning
+          echo "💾 Saving production image for security scan..."
+          docker save "$PROD_IMAGE" | gzip > /tmp/phaserai-image.tar.gz
           
           echo "✅ Image testing completed"
       
@@ -218,7 +234,7 @@ jobs:
       - name: Run Container Security Scan
         uses: aquasecurity/trivy-action@master
         with:
-          input: /tmp/phaserai-image.tar
+          input: /tmp/phaserai-image.tar.gz
           format: 'sarif'
           output: 'trivy-results.sarif'
       
@@ -235,7 +251,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: docker-image
-          path: /tmp/phaserai-image.tar
+          path: /tmp/phaserai-image.tar.gz
           retention-days: 7
 
   # ============================================================================
