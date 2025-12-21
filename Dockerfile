@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:25-alpine AS builder
 
 # Build arguments for environment variables
 ARG VITE_SUPABASE_URL
