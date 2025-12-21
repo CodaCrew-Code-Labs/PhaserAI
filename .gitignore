@@ -435,6 +435,7 @@ Thumbs.db
 !playwright.config.js
 !tailwind.config.js
 !vite.config.js
+!eslint.config.js
 !tsconfig.json
 !package.json
 !README.md
