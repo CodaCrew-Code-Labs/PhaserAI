@@ -5,12 +5,15 @@ import { CognitoAuthStack } from '../lib/cognito-auth-stack';
 import { ProductionDatabaseStack } from '../lib/production-database-stack';
 import { ProductionApiStack } from '../lib/production-api-stack';
 import { BastionStack } from '../lib/bastion-stack';
+import { MigrationStack } from '../lib/migration-stack';
+import { BackupStack } from '../lib/backup-stack';
 
 const app = new cdk.App();
 
 // Get configuration from context or environment
 const appName = app.node.tryGetContext('appName') || 'phaserai';
 const environment = app.node.tryGetContext('environment') || 'dev';
+const notificationEmail = app.node.tryGetContext('notificationEmail') || '';
 
 // Common environment configuration
 const env = {
@@ -39,6 +42,26 @@ const productionDatabaseStack = new ProductionDatabaseStack(app, `${appName}-pro
   env,
 });
 
+// Create backup stack
+const backupStack = new BackupStack(app, `${appName}-backup-${environment}`, {
+  database: productionDatabaseStack.database,
+  environment,
+  appName,
+  notificationEmail,
+  env,
+});
+backupStack.addDependency(productionDatabaseStack);
+
+// Create migration stack
+const migrationStack = new MigrationStack(app, `${appName}-migration-${environment}`, {
+  vpc: productionDatabaseStack.vpc,
+  databaseSecretArn: productionDatabaseStack.databaseSecret.secretArn,
+  databaseEndpoint: productionDatabaseStack.database.instanceEndpoint.hostname,
+  lambdaSecurityGroup: productionDatabaseStack.lambdaSecurityGroup,
+  env,
+});
+migrationStack.addDependency(productionDatabaseStack);
+
 // Create bastion stack for database access
 new BastionStack(app, `${appName}-prod-bastion-${environment}`, {
   vpc: productionDatabaseStack.vpc,
@@ -57,8 +80,9 @@ const productionApiStack = new ProductionApiStack(app, `${appName}-prod-api-${en
   env,
 });
 
-// API depends on database
+// API depends on database and migrations
 productionApiStack.addDependency(productionDatabaseStack);
+productionApiStack.addDependency(migrationStack);
 
 // Create auth stack
 new CognitoAuthStack(app, `${appName}-auth-${environment}`, {

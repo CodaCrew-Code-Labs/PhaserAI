@@ -1,6 +1,6 @@
 # PhaserAI - AI-Powered Conlang Lexicon Tool
 
-A comprehensive platform for building phonologically-valid constructed languages with AI-powered features, alphabet-to-IPA mapping, and advanced lexicon management. Built with modern web technologies and AWS cloud infrastructure.
+A comprehensive platform for building phonologically-valid constructed languages with AI-powered features, alphabet-to-IPA mapping, and advanced lexicon management. Built with modern web technologies, AWS cloud infrastructure, and enterprise-grade backup and disaster recovery capabilities.
 
 ## 📋 Table of Contents
 
@@ -11,6 +11,9 @@ A comprehensive platform for building phonologically-valid constructed languages
 - [Quick Start](#quick-start)
 - [Development Setup](#development-setup)
 - [Infrastructure](#infrastructure)
+- [Database Management](#database-management)
+- [Backup & Recovery](#backup--recovery)
+- [Data Retention](#data-retention)
 - [Database Schema](#database-schema)
 - [API Documentation](#api-documentation)
 - [Frontend Architecture](#frontend-architecture)
@@ -18,6 +21,7 @@ A comprehensive platform for building phonologically-valid constructed languages
 - [Deployment](#deployment)
 - [Monitoring & Logging](#monitoring--logging)
 - [Testing](#testing)
+- [Disaster Recovery](#disaster-recovery)
 - [Contributing](#contributing)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
@@ -36,9 +40,10 @@ PhaserAI is a production-ready web application designed for constructed language
 ### Key Statistics
 - **Frontend**: React 19 + TypeScript with 50+ components
 - **Backend**: AWS serverless architecture with RDS PostgreSQL
-- **Infrastructure**: CDK-managed AWS resources
+- **Infrastructure**: CDK-managed AWS resources with automated backups
 - **Security**: Cognito authentication with row-level security
 - **Performance**: <50MB Docker images, sub-second API responses
+- **Reliability**: 99.9% uptime target with 4-hour RTO, 1-hour RPO
 
 ## 🏗️ Architecture
 
@@ -54,6 +59,15 @@ PhaserAI is a production-ready web application designed for constructed language
          └─────────────►│   Cognito Auth   │◄────────────┘
                         │   (Identity)     │
                         └──────────────────┘
+                                 │
+         ┌──────────────────────────────────────────────────────┐
+         │                                                      │
+         ▼                       ▼                              ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   AWS Backup    │    │   Migration      │    │   Monitoring    │
+│   + S3 Storage  │    │   Lambda         │    │   + Alerting    │
+│                 │    │                  │    │                 │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
 
 ### Technology Stack
@@ -68,14 +82,16 @@ PhaserAI is a production-ready web application designed for constructed language
 
 **Backend:**
 - **API**: AWS API Gateway + Lambda functions
-- **Database**: Amazon RDS PostgreSQL 15.8
+- **Database**: Amazon RDS PostgreSQL 15.8 with Multi-AZ
 - **Authentication**: AWS Cognito with OAuth
 - **Infrastructure**: AWS CDK (TypeScript)
 
-**DevOps:**
+**DevOps & Operations:**
 - **Containerization**: Docker multi-stage builds
 - **Web Server**: Nginx with security headers
 - **Monitoring**: CloudWatch + health checks
+- **Backup**: AWS Backup + S3 with lifecycle management
+- **Migration**: Automated database schema versioning
 - **CI/CD**: Ready for GitHub Actions integration
 
 ## ✨ Features
@@ -327,7 +343,7 @@ npx tsc --noEmit --watch
 
 **Resources:**
 - **VPC**: 3-tier architecture (public/private/database subnets)
-- **RDS Instance**: PostgreSQL 15.8 with encryption
+- **RDS Instance**: PostgreSQL 15.8 with encryption and Multi-AZ
 - **Security Groups**: Database and Lambda access control
 - **Secrets Manager**: Database credentials
 - **Subnet Groups**: Database isolation
@@ -345,7 +361,43 @@ deletionProtection: environment === 'prod',
 backupRetention: environment === 'prod' ? 7 : 1 days
 ```
 
-#### 2. Production API Stack (`ProductionApiStack`)
+#### 2. Backup Stack (`BackupStack`)
+**Purpose**: Comprehensive backup and recovery management
+
+**Resources:**
+- **AWS Backup Vault**: Automated backup scheduling with encryption
+- **S3 Backup Bucket**: Long-term storage with intelligent tiering
+- **Verification Lambda**: Python-based backup integrity checking
+- **SNS Topic**: Automated notifications for backup issues
+- **CloudWatch Events**: Scheduled backup verification
+
+**Backup Schedule:**
+```yaml
+Production:
+  Daily: 2:00 AM UTC (35-day retention)
+  Weekly: Sunday 1:00 AM UTC (1-year retention)
+  Monthly: 1st day 12:00 AM UTC (7-year retention)
+
+Storage Lifecycle:
+  Standard → IA (30 days) → Glacier (90 days) → Deep Archive (365 days)
+```
+
+#### 3. Migration Stack (`MigrationStack`)
+**Purpose**: Automated database schema management
+
+**Resources:**
+- **Migration Lambda**: Serverless migration runner
+- **Custom Resource**: Automatic migration on deployment
+- **VPC Integration**: Secure database access
+- **CloudWatch Logs**: Migration execution tracking
+
+**Features:**
+- Versioned migration files with UP/DOWN sections
+- Automatic execution during CDK deployment
+- Rollback capabilities for failed migrations
+- Migration status tracking and reporting
+
+#### 4. Production API Stack (`ProductionApiStack`)
 **Purpose**: Serverless API with Lambda functions
 
 **Resources:**
@@ -375,7 +427,7 @@ PUT    /words/{wordId}
 DELETE /words/{wordId}
 ```
 
-#### 3. Cognito Auth Stack (`CognitoAuthStack`)
+#### 5. Cognito Auth Stack (`CognitoAuthStack`)
 **Purpose**: User authentication and authorization
 
 **Resources:**
@@ -431,6 +483,224 @@ cdk deploy --context appName=phaserai \
            --context environment=prod \
            --context googleClientId=your-client-id \
            --context googleClientSecret=your-secret
+```
+
+## 🗄️ Database Schema
+
+### Core Tables
+
+#### Users (`app_8b514_users`)
+```sql
+CREATE TABLE app_8b514_users (
+  user_id TEXT PRIMARY KEY,           -- Cognito user ID
+  email TEXT NOT NULL UNIQUE,
+  username TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+### Deployment Commands
+
+```bash
+cd infra
+
+# Deploy all stacks including backup and migration
+cdk deploy --all --context notificationEmail=admin@example.com
+
+# Deploy specific stacks
+cdk deploy phaserai-prod-database-dev
+cdk deploy phaserai-backup-dev
+cdk deploy phaserai-migration-dev
+
+# Destroy all stacks (careful!)
+cdk destroy --all
+
+# Show deployment differences
+cdk diff
+
+# Synthesize CloudFormation templates
+cdk synth
+```
+
+### Environment Variables
+
+The CDK stacks use context variables for configuration:
+
+```bash
+# Set context variables
+cdk deploy --context appName=phaserai \
+           --context environment=prod \
+           --context notificationEmail=admin@example.com \
+           --context googleClientId=your-client-id \
+           --context googleClientSecret=your-secret
+```
+
+## 🗄️ Database Management
+
+### Migration System
+
+PhaserAI uses a comprehensive database migration system for schema versioning and automated deployments.
+
+#### Migration Files Structure
+```
+infra/migrations/
+├── 20250101_120000_initial_schema.sql
+├── 20250102_143000_add_etymology_tables.sql
+├── 20250103_091500_add_user_preferences.sql
+└── README.md
+```
+
+#### Migration Commands
+```bash
+# Check migration status
+./scripts/migrate.sh status
+
+# Apply all pending migrations
+./scripts/migrate.sh up
+
+# Rollback last migration
+./scripts/migrate.sh down
+
+# Production migration with backup
+ENVIRONMENT=prod ./scripts/migrate.sh up
+```
+
+#### Automated Migration
+Migrations run automatically during CDK deployment via the MigrationStack custom resource.
+
+### Migration Best Practices
+- **Always use transactions**: Wrap changes in BEGIN/COMMIT blocks
+- **Make migrations idempotent**: Use IF NOT EXISTS clauses
+- **Test thoroughly**: Test on development before production
+- **Backup before production**: Automatic backups before migration
+
+## 💾 Backup & Recovery
+
+### Automated Backup System
+
+#### Backup Schedule
+```yaml
+Production Environment:
+  Daily Backups:
+    Time: 2:00 AM UTC
+    Retention: 35 days
+    Storage: Standard → IA (30 days)
+  
+  Weekly Backups:
+    Time: Sunday 1:00 AM UTC
+    Retention: 1 year
+    Storage: IA → Glacier (30 days)
+  
+  Monthly Backups:
+    Time: 1st day 12:00 AM UTC
+    Retention: 7 years
+    Storage: Glacier → Deep Archive (90 days)
+
+Staging/Development:
+  Daily Backups:
+    Time: 3:00/4:00 AM UTC
+    Retention: 7/3 days
+    Storage: Standard only
+```
+
+#### Backup Verification
+```bash
+# Daily automated verification (runs at 6:00 AM UTC)
+./scripts/backup-verification.sh
+
+# Manual verification with restoration test
+./scripts/backup-verification.sh --test-restore
+
+# Production verification with notifications
+ENVIRONMENT=prod ./scripts/backup-verification.sh --notification-email admin@example.com
+```
+
+#### Backup Features
+- **Automated Scheduling**: AWS Backup service with lifecycle management
+- **Cross-Region Replication**: Geographic redundancy for disaster recovery
+- **Encryption**: All backups encrypted at rest and in transit
+- **Integrity Verification**: Daily automated backup validation
+- **Point-in-Time Recovery**: 7-day PITR for production databases
+
+### Disaster Recovery
+
+#### Recovery Objectives
+```yaml
+Production:
+  RTO (Recovery Time Objective): 4 hours
+  RPO (Recovery Point Objective): 1 hour
+  Data Loss Tolerance: Maximum 1 hour
+
+Staging:
+  RTO: 8 hours
+  RPO: 24 hours
+  Data Loss Tolerance: Maximum 24 hours
+```
+
+#### Disaster Recovery Testing
+```bash
+# Test database recovery
+./scripts/disaster-recovery-test.sh --test-type database
+
+# Test infrastructure recovery
+./scripts/disaster-recovery-test.sh --test-type infrastructure
+
+# Test cross-region failover
+./scripts/disaster-recovery-test.sh --test-type cross-region
+
+# Run all DR tests
+./scripts/disaster-recovery-test.sh --test-type all
+```
+
+#### Recovery Procedures
+- **Database Corruption**: Restore from latest automated backup
+- **Regional Outage**: Failover to cross-region backup
+- **Infrastructure Failure**: Redeploy from CDK source control
+- **Security Breach**: Clean backup restoration with credential rotation
+
+## 📊 Data Retention
+
+### Retention Policies
+
+#### User Data
+| Data Type | Production | Staging | Development |
+|-----------|------------|---------|-------------|
+| Active user accounts | While active + 3 years | 30 days | 7 days |
+| Deleted user accounts | 30 days recovery period | 7 days | 1 day |
+| User preferences | Same as user account | 30 days | 7 days |
+| Authentication logs | 1 year | 30 days | 7 days |
+
+#### Application Data
+| Data Type | Production | Staging | Development |
+|-----------|------------|---------|-------------|
+| Languages & words | While user active + 30 days | 7 days | 3 days |
+| Etymology data | While user active + 30 days | 7 days | 3 days |
+| Violation logs | 90 days | 30 days | 7 days |
+| Performance metrics | 1 year detailed, 3 years aggregated | 30 days | 7 days |
+
+#### System Data
+| Data Type | Production | Staging | Development |
+|-----------|------------|---------|-------------|
+| Application logs | 90 days | 30 days | 7 days |
+| Security logs | 1 year | 90 days | 7 days |
+| Audit trails | 7 years (compliance) | 90 days | 7 days |
+| Backup data | See backup schedule | 7 days | 3 days |
+
+### Compliance Features
+- **GDPR Compliance**: Right to access, rectification, erasure, and portability
+- **CCPA Compliance**: California consumer privacy rights
+- **SOX Compliance**: 7-year audit trail retention
+- **Automated Cleanup**: Scheduled jobs for expired data removal
+- **User Rights**: Self-service data export and deletion requests
+
+### Data Retention Commands
+```bash
+# Check retention compliance
+cd infra && npm run retention:check
+
+# Generate retention report
+cd infra && npm run retention:report
+
+# Manual cleanup (development only)
+cd infra && npm run retention:cleanup
 ```
 
 ## 🗄️ Database Schema
@@ -509,6 +779,19 @@ CREATE TABLE app_8b514_phonological_violations (
   description TEXT NOT NULL,
   severity VARCHAR(20) DEFAULT 'warning',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+### Migration Tracking
+
+#### Schema Migrations (`schema_migrations`)
+```sql
+CREATE TABLE schema_migrations (
+  version VARCHAR(50) PRIMARY KEY,
+  applied_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  checksum VARCHAR(64),
+  execution_time_ms INTEGER,
+  description TEXT
 );
 ```
 
@@ -1090,6 +1373,12 @@ docker exec phaserai-prod-container tail -f /var/log/nginx/access.log
 - Error rate monitoring
 - Latency tracking
 
+**Backup Monitoring:**
+- Daily backup verification at 6:00 AM UTC
+- Automated alerts for backup failures
+- Cross-region backup status monitoring
+- Storage cost optimization tracking
+
 ## 🧪 Testing
 
 ### Testing Strategy
@@ -1108,6 +1397,11 @@ docker exec phaserai-prod-container tail -f /var/log/nginx/access.log
 - **Framework**: Playwright
 - **Coverage**: Critical user journeys
 - **Location**: `e2e/`
+
+#### Infrastructure Tests
+- **Framework**: CDK Unit Tests + AWS Testing Library
+- **Coverage**: CDK stack validation, resource configuration
+- **Location**: `infra/test/`
 
 ### Test Setup
 
@@ -1220,6 +1514,97 @@ test('user can create a new language', async ({ page }) => {
 });
 ```
 
+## 🚨 Disaster Recovery
+
+### Disaster Recovery Testing
+
+PhaserAI includes comprehensive disaster recovery testing capabilities to ensure business continuity.
+
+#### DR Test Types
+
+**Database Recovery Testing:**
+```bash
+# Test database backup restoration
+./scripts/disaster-recovery-test.sh --test-type database
+
+# Test with cleanup disabled (for investigation)
+./scripts/disaster-recovery-test.sh --test-type database --no-cleanup
+```
+
+**Infrastructure Recovery Testing:**
+```bash
+# Test complete infrastructure deployment from source
+./scripts/disaster-recovery-test.sh --test-type infrastructure
+
+# Test with notifications
+./scripts/disaster-recovery-test.sh --test-type infrastructure --notification-email admin@example.com
+```
+
+**Cross-Region Recovery Testing:**
+```bash
+# Test cross-region failover capabilities
+./scripts/disaster-recovery-test.sh --test-type cross-region
+```
+
+**Security Breach Recovery Testing:**
+```bash
+# Test security incident recovery procedures
+./scripts/disaster-recovery-test.sh --test-type security
+```
+
+**Comprehensive DR Testing:**
+```bash
+# Run all disaster recovery tests
+./scripts/disaster-recovery-test.sh --test-type all --notification-email team@example.com
+```
+
+#### DR Testing Schedule
+
+**Monthly Tests:**
+- Database recovery validation
+- Backup integrity verification
+- Infrastructure deployment testing
+
+**Quarterly Tests:**
+- Cross-region failover testing
+- Complete infrastructure recovery
+- Security breach simulation
+
+**Annual Tests:**
+- Full disaster simulation
+- Regional outage scenario
+- Complete data center loss simulation
+
+### Recovery Procedures
+
+#### Database Recovery
+1. **Assess Impact**: Determine scope of database issues
+2. **Stop Traffic**: Prevent further data corruption
+3. **Identify Backup**: Select appropriate recovery point
+4. **Restore Database**: Use AWS Backup or point-in-time recovery
+5. **Validate Data**: Run integrity checks
+6. **Resume Operations**: Gradually restore traffic
+
+#### Infrastructure Recovery
+1. **Source Control**: Ensure latest CDK code is available
+2. **Deploy Infrastructure**: Use CDK to recreate resources
+3. **Restore Configuration**: Apply environment-specific settings
+4. **Test Connectivity**: Verify all services are operational
+5. **Update DNS**: Point traffic to new infrastructure
+
+#### Security Incident Recovery
+1. **Isolate Systems**: Prevent further compromise
+2. **Rotate Credentials**: Update all passwords and keys
+3. **Clean Restore**: Restore from known-good backup
+4. **Security Patches**: Apply latest security updates
+5. **Monitor**: Enhanced monitoring for suspicious activity
+
+### Recovery Documentation
+
+**Detailed Procedures**: See [docs/DISASTER_RECOVERY_PLAN.md](docs/DISASTER_RECOVERY_PLAN.md)
+**Migration Guide**: See [docs/MIGRATION_GUIDE.md](docs/MIGRATION_GUIDE.md)
+**Data Retention Policy**: See [docs/DATA_RETENTION_POLICY.md](docs/DATA_RETENTION_POLICY.md)
+
 ## 🤝 Contributing
 
 ### Development Workflow
@@ -1254,6 +1639,12 @@ test('user can create a new language', async ({ page }) => {
    pnpm run lint
    pnpm run test
    pnpm run build
+   
+   # Test infrastructure changes
+   cd infra && npm run test
+   
+   # Test migrations
+   ./scripts/migrate.sh status
    ```
 
 6. **Commit & Push**
@@ -1472,6 +1863,88 @@ Any other context or screenshots
    psql -h your-rds-endpoint -U phaserai_admin -d phaserai_dev
    ```
 
+#### Migration Issues
+**Problem**: Database migrations failing or stuck
+
+**Solutions:**
+1. Check migration status:
+   ```bash
+   ./scripts/migrate.sh status
+   ```
+
+2. Verify database connectivity:
+   ```bash
+   psql -h your-db -U user -d database -c "SELECT 1;"
+   ```
+
+3. Check migration file syntax:
+   ```bash
+   # Validate SQL syntax
+   psql -h your-db -U user -d database --dry-run -f migration.sql
+   ```
+
+4. Manual migration rollback:
+   ```bash
+   ./scripts/migrate.sh down
+   ```
+
+5. Reset migration state (development only):
+   ```sql
+   DELETE FROM schema_migrations WHERE version = 'problematic_version';
+   ```
+
+#### Backup Verification Failures
+**Problem**: Backup verification script reporting issues
+
+**Solutions:**
+1. Check backup vault access:
+   ```bash
+   aws backup list-recovery-points-by-backup-vault --backup-vault-name your-vault
+   ```
+
+2. Verify backup age:
+   ```bash
+   ./scripts/backup-verification.sh --environment prod
+   ```
+
+3. Test backup restoration:
+   ```bash
+   ./scripts/backup-verification.sh --test-restore
+   ```
+
+4. Check S3 backup bucket:
+   ```bash
+   aws s3 ls s3://your-backup-bucket/
+   ```
+
+5. Review CloudWatch logs for backup Lambda function
+
+#### Disaster Recovery Test Failures
+**Problem**: DR tests failing or timing out
+
+**Solutions:**
+1. Check AWS permissions:
+   ```bash
+   aws sts get-caller-identity
+   aws backup list-backup-vaults
+   ```
+
+2. Verify test environment resources:
+   ```bash
+   ./scripts/disaster-recovery-test.sh --test-type database --no-cleanup
+   ```
+
+3. Check restoration timeout settings:
+   ```bash
+   # Increase timeout for large databases
+   export DR_TEST_TIMEOUT=3600
+   ```
+
+4. Review test logs:
+   ```bash
+   tail -f /tmp/dr-test-report-*.json
+   ```
+
 #### Authentication Errors
 **Problem**: Cognito authentication failing
 
@@ -1577,10 +2050,51 @@ npx vite-bundle-analyzer dist
 ### Getting Help
 
 1. **Check Documentation**: Review this README and linked guides
+   - [Migration Guide](docs/MIGRATION_GUIDE.md)
+   - [Disaster Recovery Plan](docs/DISASTER_RECOVERY_PLAN.md)
+   - [Data Retention Policy](docs/DATA_RETENTION_POLICY.md)
+
 2. **Search Issues**: Look for similar problems in GitHub issues
+
 3. **Create Issue**: Use issue templates for bug reports or feature requests
-4. **Community**: Join our Discord/Slack for real-time help
-5. **Contact**: Reach out to maintainers for urgent issues
+
+4. **Run Diagnostics**: Use built-in diagnostic tools
+   ```bash
+   # Health check
+   curl http://localhost/health
+   
+   # Backup verification
+   ./scripts/backup-verification.sh
+   
+   # DR test
+   ./scripts/disaster-recovery-test.sh --test-type database
+   
+   # Migration status
+   ./scripts/migrate.sh status
+   ```
+
+5. **Community**: Join our Discord/Slack for real-time help
+
+6. **Contact**: Reach out to maintainers for urgent issues
+
+## 📚 Additional Documentation
+
+### Operational Guides
+- **[Migration Guide](docs/MIGRATION_GUIDE.md)**: Complete database migration procedures
+- **[Disaster Recovery Plan](docs/DISASTER_RECOVERY_PLAN.md)**: Comprehensive DR procedures and testing
+- **[Data Retention Policy](docs/DATA_RETENTION_POLICY.md)**: Data lifecycle and compliance requirements
+
+### Scripts Reference
+- **`./scripts/migrate.sh`**: Database migration management
+- **`./scripts/backup-verification.sh`**: Backup integrity verification
+- **`./scripts/disaster-recovery-test.sh`**: DR testing and validation
+
+### Infrastructure Components
+- **BackupStack**: Automated backup and verification system
+- **MigrationStack**: Database schema management and versioning
+- **ProductionDatabaseStack**: RDS instance with Multi-AZ and encryption
+- **ProductionApiStack**: Serverless API with Lambda functions
+- **CognitoAuthStack**: User authentication and authorization
 
 ## 📝 License
 
@@ -1598,4 +2112,4 @@ By contributing to this project, you agree that your contributions will be licen
 
 **Built with ❤️ for constructed language creators worldwide**
 
-*PhaserAI empowers linguists, writers, and world-builders to create rich, phonologically-consistent constructed languages with the power of modern AI and linguistic tools.*
+*PhaserAI empowers linguists, writers, and world-builders to create rich, phonologically-consistent constructed languages with enterprise-grade reliability, comprehensive backup systems, and automated disaster recovery capabilities.*
