@@ -428,7 +428,7 @@ psql -h your-db -U user -d database -c "
 name: Database Migration
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths: ['infra/migrations/**']
 
 jobs:

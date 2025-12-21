@@ -1226,7 +1226,7 @@ name: Deploy to Production
 
 on:
   push:
-    branches: [main]
+    branches: [master]
 
 jobs:
   test:

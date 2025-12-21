@@ -25,11 +25,11 @@ name: Docker Build & Push
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, master]
     tags: ['v*']
   
   pull_request:
-    branches: [main, develop]
+    branches: [main, develop, master]
     paths:
       - 'Dockerfile*'
       - 'src/**'
