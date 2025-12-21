@@ -12,11 +12,20 @@
     "destroy": "cdk destroy --all",
     "diff": "cdk diff",
     "synth": "cdk synth",
+    "lint": "eslint --ext .ts lib/ bin/",
+    "lint:fix": "eslint --fix --ext .ts lib/ bin/",
+    "lint:report": "eslint --format json --output-file eslint-report.json --ext .ts lib/ bin/",
+    "type-check": "tsc --noEmit",
     "migrate:up": "node lib/migration-runner.js up",
     "migrate:down": "node lib/migration-runner.js down",
     "migrate:status": "node lib/migration-runner.js status",
     "migrate:list": "node lib/migration-runner.js list",
-    "migrate:prod": "NODE_ENV=production node lib/migration-runner.js up"
+    "migrate:prod": "NODE_ENV=production node lib/migration-runner.js up",
+    "ci:build": "npm run type-check && npm run lint && npm run build",
+    "ci:synth": "npm run build && npm run synth",
+    "ci:security-audit": "npm audit --audit-level moderate",
+    "layer:build": "cd lambda-layers/psycopg2 && ./build-layer.sh",
+    "layer:verify": "cd lambda-layers/psycopg2 && ./verify-deployment.sh"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

@@ -1,0 +1,209 @@
+# ============================================================================
+# Docker Compose Configuration for PhaserAI
+# ============================================================================
+#
+# This Docker Compose setup provides a complete local development environment
+# including the frontend application, database, and supporting services.
+#
+# SERVICES:
+# - app-dev: Development frontend with hot reload
+# - app-prod: Production frontend build
+# - postgres: PostgreSQL database
+# - redis: Redis cache (future use)
+# - nginx: Reverse proxy (production setup)
+#
+# USAGE:
+#   Development: docker-compose up app-dev postgres
+#   Production:  docker-compose up app-prod postgres nginx
+#   Full stack:  docker-compose up
+#
+# ============================================================================
+
+version: '3.8'
+
+services:
+  # ==========================================================================
+  # FRONTEND APPLICATION - DEVELOPMENT
+  # ==========================================================================
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-http://localhost:54321}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-your-anon-key}
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL:-http://localhost:54321}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY:-your-anon-key}
+    depends_on:
+      - postgres
+    networks:
+      - phaserai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==========================================================================
+  # FRONTEND APPLICATION - PRODUCTION
+  # ==========================================================================
+  app-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-http://localhost:54321}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-your-anon-key}
+    ports:
+      - "8080:80"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - postgres
+    networks:
+      - phaserai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ==========================================================================
+  # POSTGRESQL DATABASE
+  # ==========================================================================
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-phaserai_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-phaserai_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_password_123}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/database-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/02-init.sql:ro
+    networks:
+      - phaserai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-phaserai_admin} -d ${POSTGRES_DB:-phaserai_dev}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+
+  # ==========================================================================
+  # REDIS CACHE (Future use for sessions, caching)
+  # ==========================================================================
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - phaserai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+
+  # ==========================================================================
+  # NGINX REVERSE PROXY (Production setup)
+  # ==========================================================================
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/:/etc/nginx/conf.d/:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - app-prod
+    networks:
+      - phaserai-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ==========================================================================
+  # DATABASE MIGRATION RUNNER (One-time setup)
+  # ==========================================================================
+  migrate:
+    build:
+      context: ./infra
+      dockerfile: ../docker/Dockerfile.migrate
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-phaserai_dev}
+      DB_USER: ${POSTGRES_USER:-phaserai_admin}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-dev_password_123}
+      NODE_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - phaserai-network
+    profiles:
+      - migration
+    command: ["npm", "run", "migrate:up"]
+
+# ============================================================================
+# NETWORKS
+# ============================================================================
+networks:
+  phaserai-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# ============================================================================
+# VOLUMES
+# ============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  nginx_logs:
+    driver: local

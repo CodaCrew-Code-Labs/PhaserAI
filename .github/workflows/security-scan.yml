@@ -1,0 +1,243 @@
+# ============================================================================
+# Security Scanning Workflow
+# ============================================================================
+#
+# Comprehensive security scanning including:
+# - Dependency vulnerabilities
+# - Code security analysis
+# - Infrastructure security checks
+# - License compliance
+#
+# ============================================================================
+
+name: Security Scan
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly on Monday at 2 AM UTC
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  dependency-scan:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8'
+      
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Frontend Security Audit
+        run: |
+          echo "🔍 Scanning frontend dependencies..."
+          pnpm audit --audit-level high --json > frontend-audit.json || true
+          
+          if [ -s frontend-audit.json ]; then
+            echo "⚠️ Security vulnerabilities found in frontend dependencies"
+            cat frontend-audit.json
+          else
+            echo "✅ No high-severity vulnerabilities found"
+          fi
+      
+      - name: Infrastructure Security Audit
+        working-directory: ./infra
+        run: |
+          echo "🔍 Scanning infrastructure dependencies..."
+          npm ci
+          npm audit --audit-level high --json > infra-audit.json || true
+          
+          if [ -s infra-audit.json ]; then
+            echo "⚠️ Security vulnerabilities found in infrastructure dependencies"
+            cat infra-audit.json
+          else
+            echo "✅ No high-severity vulnerabilities found"
+          fi
+      
+      - name: Upload Security Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            frontend-audit.json
+            infra/infra-audit.json
+          retention-days: 30
+
+  code-security:
+    name: Code Security Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript, typescript
+      
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+      
+      - name: Secret Scanning
+        run: |
+          echo "🔍 Scanning for secrets and sensitive data..."
+          
+          # Check for common secret patterns
+          SECRET_PATTERNS=(
+            "password\s*=\s*['\"][^'\"]*['\"]"
+            "api[_-]?key\s*=\s*['\"][^'\"]*['\"]"
+            "secret\s*=\s*['\"][^'\"]*['\"]"
+            "token\s*=\s*['\"][^'\"]*['\"]"
+            "-----BEGIN.*PRIVATE KEY-----"
+          )
+          
+          SECRETS_FOUND=false
+          
+          for pattern in "${SECRET_PATTERNS[@]}"; do
+            if grep -rE "$pattern" . --exclude-dir=node_modules --exclude-dir=.git; then
+              echo "⚠️ Potential secret found: $pattern"
+              SECRETS_FOUND=true
+            fi
+          done
+          
+          if [ "$SECRETS_FOUND" = false ]; then
+            echo "✅ No obvious secrets found"
+          fi
+
+  infrastructure-security:
+    name: Infrastructure Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install CDK Dependencies
+        working-directory: ./infra
+        run: npm ci
+      
+      - name: CDK Security Analysis
+        working-directory: ./infra
+        run: |
+          echo "🔍 Analyzing CDK infrastructure security..."
+          
+          # Synthesize templates for analysis
+          npx cdk synth --all --quiet
+          
+          # Check for security issues
+          echo "Checking for public access..."
+          if grep -r "0.0.0.0/0" cdk.out/ --include="*.json"; then
+            echo "⚠️ Public access detected - review security groups"
+          fi
+          
+          echo "Checking for unencrypted resources..."
+          if grep -r "Encrypted.*false" cdk.out/ --include="*.json"; then
+            echo "⚠️ Unencrypted resources found"
+          fi
+          
+          echo "Checking for hardcoded values..."
+          if grep -rE "(password|secret|key).*:" cdk.out/ --include="*.json" | grep -v "Ref\|GetAtt\|Parameter"; then
+            echo "⚠️ Potential hardcoded secrets in infrastructure"
+          fi
+          
+          echo "✅ Infrastructure security analysis completed"
+
+  license-compliance:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8'
+      
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Check Licenses
+        run: |
+          echo "📄 Checking license compliance..."
+          
+          # Install license checker
+          npm install -g license-checker
+          
+          # Check frontend licenses
+          echo "Frontend dependencies:"
+          license-checker --summary --onlyAllow "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD" || {
+            echo "⚠️ Non-compliant licenses found in frontend dependencies"
+            license-checker --detailed
+          }
+          
+          # Check infrastructure licenses
+          cd infra
+          echo "Infrastructure dependencies:"
+          license-checker --summary --onlyAllow "MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD" || {
+            echo "⚠️ Non-compliant licenses found in infrastructure dependencies"
+            license-checker --detailed
+          }
+
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, code-security, infrastructure-security, license-compliance]
+    if: always()
+    
+    steps:
+      - name: Security Report
+        run: |
+          echo "🛡️ Security Scan Summary"
+          echo "========================"
+          echo "Dependency Scan: ${{ needs.dependency-scan.result }}"
+          echo "Code Security: ${{ needs.code-security.result }}"
+          echo "Infrastructure Security: ${{ needs.infrastructure-security.result }}"
+          echo "License Compliance: ${{ needs.license-compliance.result }}"
+          
+          if [ "${{ needs.dependency-scan.result }}" = "success" ] && \
+             [ "${{ needs.code-security.result }}" = "success" ] && \
+             [ "${{ needs.infrastructure-security.result }}" = "success" ] && \
+             [ "${{ needs.license-compliance.result }}" = "success" ]; then
+            echo "✅ All security checks passed"
+          else
+            echo "⚠️ Some security checks failed - review results"
+          fi

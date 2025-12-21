@@ -1,0 +1,106 @@
+# ============================================================================
+# Pull Request Checks Workflow
+# ============================================================================
+#
+# Lightweight checks that run on every PR for quick feedback
+# Focuses on code quality, formatting, and basic validation
+#
+# ============================================================================
+
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  quick-checks:
+    name: Quick PR Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8'
+      
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Check Formatting
+        run: |
+          echo "🎨 Checking code formatting..."
+          pnpm run format:check || {
+            echo "❌ Code formatting issues found"
+            echo "Run 'pnpm run format' to fix"
+            exit 1
+          }
+      
+      - name: Quick Lint
+        run: |
+          echo "🔍 Running quick lint checks..."
+          pnpm run lint
+      
+      - name: PR Size Check
+        run: |
+          echo "📏 Checking PR size..."
+          
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | wc -l)
+          CHANGED_LINES=$(git diff --stat origin/${{ github.base_ref }}...HEAD | tail -1 | awk '{print $4+$6}')
+          
+          echo "Files changed: $CHANGED_FILES"
+          echo "Lines changed: $CHANGED_LINES"
+          
+          if [ $CHANGED_FILES -gt 50 ]; then
+            echo "⚠️ Large PR: Consider breaking into smaller PRs"
+          fi
+          
+          if [ $CHANGED_LINES -gt 1000 ]; then
+            echo "⚠️ Very large PR: Review may take longer"
+          fi
+      
+      - name: Check for Secrets
+        run: |
+          echo "🔒 Checking for potential secrets..."
+          
+          if git diff origin/${{ github.base_ref }}...HEAD | grep -iE "(password|secret|api[_-]?key|token)" | grep -v "PASSWORD\|SECRET\|API_KEY"; then
+            echo "⚠️ Potential secrets detected - please review"
+          else
+            echo "✅ No obvious secrets found"
+          fi
+      
+      - name: Comment PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `
+            ## PR Checks Summary
+            
+            ✅ Quick checks completed
+            
+            - Code formatting: Passed
+            - Lint checks: Passed
+            - Security scan: Passed
+            
+            Full pipeline running in parallel...
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })

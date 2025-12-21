@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+pnpm-lock.yaml
+package-lock.json
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# CDK outputs
+infra/cdk.out/
+infra/node_modules/
+
+# Lambda layers
+infra/lambda-layers/*/python/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+
+# Coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.temp

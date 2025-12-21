@@ -3,6 +3,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as cr from 'aws-cdk-lib/custom-resources';
 import { Construct } from 'constructs';
 
 export interface MigrationStackProps extends cdk.StackProps {
@@ -20,21 +21,21 @@ export class MigrationStack extends cdk.Stack {
 
     const { vpc, databaseSecretArn, databaseEndpoint, lambdaSecurityGroup } = props;
 
+    // Create Lambda layer for psycopg2 (PostgreSQL driver)
+    const psycopg2Layer = new lambda.LayerVersion(this, 'Psycopg2Layer', {
+      code: lambda.Code.fromAsset('lambda-layers/psycopg2'),
+      compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
+      description: 'PostgreSQL driver (psycopg2) for Lambda',
+    });
+
     // Create Lambda function for database migrations
     this.migrationFunction = new lambda.Function(this, 'MigrationFunction', {
-      runtime: lambda.Runtime.NODEJS_18_X,
-      handler: 'migration-lambda.handler',
-      code: lambda.Code.fromAsset('lib', {
-        bundling: {
-          image: lambda.Runtime.NODEJS_18_X.bundlingImage,
-          command: [
-            'bash', '-c',
-            'npm install && cp -r /asset-input/* /asset-output/'
-          ],
-        },
-      }),
+      runtime: lambda.Runtime.PYTHON_3_11,
+      handler: 'migration.handler',
+      code: lambda.Code.fromAsset('lambda-functions'),
       timeout: cdk.Duration.minutes(15), // Migrations can take time
       memorySize: 512,
+      layers: [psycopg2Layer],
       vpc,
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
@@ -69,7 +70,7 @@ export class MigrationStack extends cdk.Stack {
     }));
 
     // Create custom resource for automatic migrations on deployment
-    const migrationProvider = new cdk.CustomResourceProvider(this, 'MigrationProvider', {
+    const migrationProvider = new cr.Provider(this, 'MigrationProvider', {
       onEventHandler: this.migrationFunction,
       logRetention: logs.RetentionDays.ONE_WEEK,
     });

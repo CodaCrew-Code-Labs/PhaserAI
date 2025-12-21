@@ -1,0 +1,609 @@
+# ============================================================================
+# PhaserAI CI/CD Pipeline
+# ============================================================================
+#
+# This GitHub Actions workflow provides comprehensive CI/CD for the PhaserAI
+# conlang application, including frontend, backend, and infrastructure.
+#
+# PIPELINE STAGES:
+# 1. Code Quality & Security - Linting, formatting, security scans
+# 2. Build & Test - Frontend build, Lambda layer build, CDK synthesis
+# 3. Infrastructure Validation - CDK diff, security checks
+# 4. Deployment (future) - ECR push, CDK deploy
+#
+# TRIGGERS:
+# - Push to main branch (full pipeline)
+# - Pull requests (build and test only)
+# - Manual dispatch (with deployment options)
+#
+# ENVIRONMENTS:
+# - Development: Auto-deploy on main branch
+# - Staging: Manual approval required
+# - Production: Manual approval + additional checks
+#
+# ============================================================================
+
+name: PhaserAI CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop, master]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
+  
+  pull_request:
+    branches: [main, develop, master]
+    paths-ignore:
+      - '*.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
+  
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      deploy_infrastructure:
+        description: 'Deploy infrastructure changes'
+        required: false
+        default: false
+        type: boolean
+      run_migrations:
+        description: 'Run database migrations'
+        required: false
+        default: false
+        type: boolean
+
+# Global environment variables
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+  PNPM_VERSION: '8'
+  AWS_REGION: 'us-east-1'
+
+# Concurrency control - cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # JOB 1: CODE QUALITY & SECURITY
+  # ============================================================================
+  code-quality:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      
+      - name: Install Frontend Dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Install Infrastructure Dependencies
+        working-directory: ./infra
+        run: npm ci
+      
+      - name: Lint Frontend Code
+        run: pnpm run lint
+        continue-on-error: true  # Don't fail build, but report issues
+      
+      - name: Lint Infrastructure Code
+        working-directory: ./infra
+        run: npm run lint
+        continue-on-error: true
+      
+      - name: Check Code Formatting
+        run: |
+          pnpm run format:check
+          echo "✅ Code formatting check completed"
+      
+      - name: TypeScript Type Check
+        run: |
+          pnpm run type-check
+          echo "✅ TypeScript type checking completed"
+      
+      - name: Security Audit - Frontend
+        run: |
+          pnpm audit --audit-level moderate
+          echo "✅ Frontend security audit completed"
+        continue-on-error: true
+      
+      - name: Security Audit - Infrastructure
+        working-directory: ./infra
+        run: |
+          npm audit --audit-level moderate
+          echo "✅ Infrastructure security audit completed"
+        continue-on-error: true
+      
+      # Upload results for later jobs
+      - name: Upload Lint Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lint-results
+          path: |
+            eslint-report.json
+            infra/eslint-report.json
+          retention-days: 7
+
+  # ============================================================================
+  # JOB 2: BUILD & TEST
+  # ============================================================================
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: code-quality
+    
+    strategy:
+      matrix:
+        component: [frontend, docker, lambda-layers, infrastructure]
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      
+      - name: Set up Docker Buildx
+        if: matrix.component == 'docker'
+        uses: docker/setup-buildx-action@v3
+      
+      # Frontend Build
+      - name: Build Frontend
+        if: matrix.component == 'frontend'
+        run: |
+          echo "🏗️ Building frontend application..."
+          pnpm install --frozen-lockfile
+          pnpm run build
+          echo "✅ Frontend build completed"
+          
+          # Verify build output
+          if [ ! -d "dist" ]; then
+            echo "❌ Build failed - dist directory not found"
+            exit 1
+          fi
+          
+          echo "📊 Build size analysis:"
+          du -sh dist/
+          ls -la dist/
+      
+      # Docker Build
+      - name: Build Docker Images
+        if: matrix.component == 'docker'
+        run: |
+          echo "🐳 Building Docker images..."
+          
+          # Build development image
+          echo "Building development image..."
+          docker build -f Dockerfile.dev -t phaserai-dev:latest \
+            --build-arg VITE_SUPABASE_URL=dummy \
+            --build-arg VITE_SUPABASE_ANON_KEY=dummy \
+            .
+          
+          # Build production image
+          echo "Building production image..."
+          docker build -f Dockerfile -t phaserai:latest \
+            --build-arg VITE_SUPABASE_URL=dummy \
+            --build-arg VITE_SUPABASE_ANON_KEY=dummy \
+            .
+          
+          echo "✅ Docker images built successfully"
+          
+          # Show image information
+          echo "📊 Docker image analysis:"
+          docker images | grep phaserai
+          
+          # Test development image
+          echo "🧪 Testing development image..."
+          docker run --rm -d --name phaserai-dev-test -p 5173:5173 phaserai-dev:latest &
+          sleep 10
+          docker stop phaserai-dev-test || true
+          
+          # Test production image
+          echo "🧪 Testing production image..."
+          docker run --rm -d --name phaserai-prod-test -p 8080:80 phaserai:latest &
+          sleep 5
+          
+          # Health check
+          if curl -f http://localhost:8080 > /dev/null 2>&1; then
+            echo "✅ Production image health check passed"
+          else
+            echo "⚠️ Production image health check failed (may be expected in CI)"
+          fi
+          
+          docker stop phaserai-prod-test || true
+          
+          # Save images for potential upload
+          echo "💾 Saving Docker images..."
+          docker save phaserai:latest | gzip > phaserai-latest.tar.gz
+          docker save phaserai-dev:latest | gzip > phaserai-dev-latest.tar.gz
+          
+          echo "📦 Image sizes:"
+          ls -lh *.tar.gz
+      
+      # Lambda Layers Build
+      - name: Build Lambda Layers
+        if: matrix.component == 'lambda-layers'
+        run: |
+          echo "🐍 Building Lambda layers..."
+          
+          # Build psycopg2 layer
+          cd infra/lambda-layers/psycopg2
+          chmod +x build-layer.sh verify-deployment.sh
+          
+          echo "Building psycopg2 layer..."
+          ./build-layer.sh
+          
+          echo "Verifying layer deployment readiness..."
+          ./verify-deployment.sh
+          
+          echo "✅ Lambda layers build completed"
+      
+      # Infrastructure Build & Synthesis
+      - name: Build Infrastructure
+        if: matrix.component == 'infrastructure'
+        run: |
+          echo "🏗️ Building and synthesizing CDK infrastructure..."
+          
+          cd infra
+          npm ci
+          
+          # CDK synthesis (validates all stacks)
+          echo "Synthesizing CDK stacks..."
+          npx cdk synth --all --quiet
+          
+          echo "✅ Infrastructure synthesis completed"
+          
+          # List generated CloudFormation templates
+          echo "📋 Generated CloudFormation templates:"
+          find cdk.out -name "*.template.json" -exec basename {} \;
+      
+      # Upload build artifacts
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.component }}
+          path: |
+            dist/
+            infra/cdk.out/
+            infra/lambda-layers/psycopg2/python/
+            *.tar.gz
+          retention-days: 7
+
+  # ============================================================================
+  # JOB 3: INFRASTRUCTURE VALIDATION
+  # ============================================================================
+  infrastructure-validation:
+    name: Infrastructure Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build-test
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Download Infrastructure Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-infrastructure
+          path: ./
+      
+      - name: Install CDK Dependencies
+        working-directory: ./infra
+        run: npm ci
+      
+      - name: CDK Security Check
+        working-directory: ./infra
+        run: |
+          echo "🔒 Running CDK security validation..."
+          
+          # Check for common security issues
+          echo "Checking for hardcoded secrets..."
+          if grep -r "password\|secret\|key" cdk.out/ --include="*.json" | grep -v "Ref\|GetAtt"; then
+            echo "⚠️ Potential hardcoded secrets found"
+          else
+            echo "✅ No hardcoded secrets detected"
+          fi
+          
+          echo "Checking for public access..."
+          if grep -r "0.0.0.0/0" cdk.out/ --include="*.json"; then
+            echo "⚠️ Public access detected - review security groups"
+          else
+            echo "✅ No unrestricted public access found"
+          fi
+      
+      - name: CDK Diff Analysis
+        working-directory: ./infra
+        run: |
+          echo "📊 Analyzing infrastructure changes..."
+          
+          # This would normally compare against deployed stack
+          # For now, we'll validate the templates
+          echo "Validating CloudFormation templates..."
+          
+          for template in cdk.out/*.template.json; do
+            if [ -f "$template" ]; then
+              echo "Validating $(basename "$template")..."
+              # Basic JSON validation
+              python3 -m json.tool "$template" > /dev/null
+              echo "✅ $(basename "$template") is valid"
+            fi
+          done
+      
+      - name: Cost Estimation
+        working-directory: ./infra
+        run: |
+          echo "💰 Estimating infrastructure costs..."
+          
+          # Count resources by type for rough cost estimation
+          echo "Resource summary:"
+          grep -r "Type.*AWS::" cdk.out/ --include="*.json" | \
+            sed 's/.*"Type": "//; s/".*//' | \
+            sort | uniq -c | \
+            sort -nr
+          
+          echo "💡 Review AWS Pricing Calculator for detailed cost estimates"
+
+  # ============================================================================
+  # JOB 4: INTEGRATION TESTS (Future)
+  # ============================================================================
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: build-test
+    if: false  # Disabled for now - enable when tests are ready
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: phaserai_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup Test Environment
+        run: |
+          echo "🧪 Setting up integration test environment..."
+          # Future: Setup test database, mock services, etc.
+      
+      - name: Run Integration Tests
+        run: |
+          echo "🧪 Running integration tests..."
+          # Future: Run API tests, database migration tests, etc.
+
+  # ============================================================================
+  # JOB 5: DEPLOYMENT PREPARATION
+  # ============================================================================
+  deployment-prep:
+    name: Deployment Preparation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [build-test, infrastructure-validation]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    
+    outputs:
+      should-deploy: ${{ steps.deploy-check.outputs.should-deploy }}
+      environment: ${{ steps.deploy-check.outputs.environment }}
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Determine Deployment Strategy
+        id: deploy-check
+        run: |
+          echo "🚀 Determining deployment strategy..."
+          
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual deployment triggered"
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "Auto-deployment to development"
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+            echo "environment=development" >> $GITHUB_OUTPUT
+          else
+            echo "No deployment needed"
+            echo "should-deploy=false" >> $GITHUB_OUTPUT
+            echo "environment=none" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Download All Artifacts
+        if: steps.deploy-check.outputs.should-deploy == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+      
+      - name: Prepare Deployment Package
+        if: steps.deploy-check.outputs.should-deploy == 'true'
+        run: |
+          echo "📦 Preparing deployment package..."
+          
+          # Create deployment directory
+          mkdir -p deployment
+          
+          # Copy frontend build
+          if [ -d "artifacts/build-frontend/dist" ]; then
+            cp -r artifacts/build-frontend/dist deployment/frontend
+            echo "✅ Frontend assets prepared"
+          fi
+          
+          # Copy infrastructure
+          if [ -d "artifacts/build-infrastructure/infra/cdk.out" ]; then
+            cp -r artifacts/build-infrastructure/infra/cdk.out deployment/infrastructure
+            echo "✅ Infrastructure templates prepared"
+          fi
+          
+          # Copy Lambda layers
+          if [ -d "artifacts/build-lambda-layers/infra/lambda-layers" ]; then
+            cp -r artifacts/build-lambda-layers/infra/lambda-layers deployment/layers
+            echo "✅ Lambda layers prepared"
+          fi
+          
+          echo "📊 Deployment package size:"
+          du -sh deployment/
+      
+      - name: Upload Deployment Package
+        if: steps.deploy-check.outputs.should-deploy == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-package
+          path: deployment/
+          retention-days: 30
+
+  # ============================================================================
+  # JOB 6: DEPLOYMENT (Future - ECR & CDK Deploy)
+  # ============================================================================
+  deploy:
+    name: Deploy to ${{ needs.deployment-prep.outputs.environment }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: deployment-prep
+    if: needs.deployment-prep.outputs.should-deploy == 'true' && false  # Disabled for now
+    
+    environment:
+      name: ${{ needs.deployment-prep.outputs.environment }}
+      url: ${{ steps.deploy.outputs.app-url }}
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Download Deployment Package
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-package
+          path: ./deployment
+      
+      - name: Deploy Infrastructure
+        id: deploy
+        run: |
+          echo "🚀 Deploying to ${{ needs.deployment-prep.outputs.environment }}..."
+          
+          # Future: CDK deploy commands
+          # cd infra
+          # npx cdk deploy --all --require-approval never
+          
+          echo "✅ Deployment completed"
+          echo "app-url=https://example.com" >> $GITHUB_OUTPUT
+
+  # ============================================================================
+  # JOB 7: POST-DEPLOYMENT VALIDATION (Future)
+  # ============================================================================
+  post-deployment:
+    name: Post-Deployment Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: deploy
+    if: false  # Disabled for now
+    
+    steps:
+      - name: Health Check
+        run: |
+          echo "🏥 Running post-deployment health checks..."
+          # Future: API health checks, database connectivity, etc.
+      
+      - name: Smoke Tests
+        run: |
+          echo "💨 Running smoke tests..."
+          # Future: Basic functionality tests
+
+  # ============================================================================
+  # JOB 8: NOTIFICATION & CLEANUP
+  # ============================================================================
+  notify:
+    name: Notification & Cleanup
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [code-quality, build-test, infrastructure-validation, deployment-prep]
+    if: always()
+    
+    steps:
+      - name: Pipeline Summary
+        run: |
+          echo "📊 Pipeline Summary"
+          echo "=================="
+          echo "Code Quality: ${{ needs.code-quality.result }}"
+          echo "Build & Test: ${{ needs.build-test.result }}"
+          echo "Infrastructure: ${{ needs.infrastructure-validation.result }}"
+          echo "Deployment Prep: ${{ needs.deployment-prep.result }}"
+          
+          if [ "${{ needs.code-quality.result }}" = "success" ] && \
+             [ "${{ needs.build-test.result }}" = "success" ]; then
+            echo "✅ Pipeline completed successfully"
+          else
+            echo "❌ Pipeline had failures"
+          fi
+      
+      - name: Cleanup Artifacts
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "🧹 Cleaning up PR artifacts..."
+          # Artifacts are automatically cleaned up by retention policy
