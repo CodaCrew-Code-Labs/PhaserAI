@@ -121,7 +121,7 @@ export class PhonologyValidator {
     const structure = this.syllableStructure.toUpperCase();
 
     // Split IPA into syllables (by '.' or '/' or estimate)
-    const syllables = ipa.split(/[.\/]/).filter((s) => s.length > 0);
+    const syllables = ipa.split(/[./]/).filter((s) => s.length > 0);
     if (syllables.length === 0) {
       syllables.push(ipa); // Treat whole word as one syllable if no separators
     }

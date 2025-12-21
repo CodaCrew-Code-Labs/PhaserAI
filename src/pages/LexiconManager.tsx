@@ -267,7 +267,7 @@ export default function LexiconManager() {
   // Format word for display (remove syllable markers)
   const formatWordForDisplay = (word: string): string => {
     // Remove all syllable markers (/, ., -)
-    return word.replace(/[\/\.\-]/g, '');
+    return word.replace(/[/.-]/g, '');
   };
 
   const loadLanguageAndWords = async () => {
@@ -301,7 +301,7 @@ export default function LexiconManager() {
 
       const wordsData = await api.getWords(id);
 
-      const formattedWords = (wordsData || []).map((word: any) => ({
+      const formattedWords = (wordsData || []).map((word: Word) => ({
         ...word,
         translations: word.translations || [],
         violations: word.violations || [],
@@ -668,7 +668,7 @@ export default function LexiconManager() {
     toast.error('AI word generation is not available. This feature requires Supabase Edge Functions which have been removed.');
   };
 
-  const handleSelectWord = (selectedWord: any) => {
+  const handleSelectWord = (selectedWord: { word: string; ipa: string }) => {
     form.setValue('word', selectedWord.word);
     form.setValue('ipa', selectedWord.ipa);
     if (generatorPos) {

@@ -95,7 +95,7 @@ export default function EtymologyTree() {
 
   const buildEtymologyTree = async (word: Word): Promise<EtymologyNode> => {
     // Etymology data should be included in the word from the API
-    const etymologyData = (word as any).etymology;
+    const etymologyData = word.etymology;
 
     const node: EtymologyNode = {
       ...word,

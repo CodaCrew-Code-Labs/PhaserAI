@@ -9,7 +9,7 @@ export const logger = {
   /**
    * Log general information (only in development)
    */
-  log: (...args: any[]) => {
+  log: (...args: unknown[]) => {
     if (isDev) {
       console.log(...args);
     }
@@ -18,7 +18,7 @@ export const logger = {
   /**
    * Log debug information (only in development)
    */
-  debug: (...args: any[]) => {
+  debug: (...args: unknown[]) => {
     if (isDev) {
       console.debug(...args);
     }
@@ -27,7 +27,7 @@ export const logger = {
   /**
    * Log warnings (always logged)
    */
-  warn: (...args: any[]) => {
+  warn: (...args: unknown[]) => {
     console.warn(...args);
   },
 
@@ -35,7 +35,7 @@ export const logger = {
    * Log errors (always logged)
    * In production, you could send these to an error tracking service
    */
-  error: (...args: any[]) => {
+  error: (...args: unknown[]) => {
     console.error(...args);
     
     // TODO: In production, send to error tracking service like Sentry
@@ -47,7 +47,7 @@ export const logger = {
   /**
    * Log info (only in development)
    */
-  info: (...args: any[]) => {
+  info: (...args: unknown[]) => {
     if (isDev) {
       console.info(...args);
     }
