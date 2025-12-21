@@ -33,6 +33,7 @@
 # ============================================================================
 
 set -e  # Exit on any error
+set -x  # Debug mode - show commands being executed
 
 # Color codes for formatted output
 RED='\033[0;31m'
@@ -107,13 +108,22 @@ warn_check() {
 # ============================================================================
 print_check "Verifying basic directory structure..."
 
+# Debug: Show current directory and contents
+print_info "Current working directory: $(pwd)"
+print_info "Directory contents:"
+ls -la "$LAYER_DIR" || true
+
 if [ ! -d "$LAYER_DIR/python" ]; then
+    print_info "Looking for python directory in current and parent directories..."
+    find "$LAYER_DIR" -name "python" -type d 2>/dev/null | head -5
     fail_check "python/ directory not found. Run ./build-layer.sh first."
     exit 1
 fi
 pass_check "python/ directory exists"
 
 if [ ! -d "$LAYER_DIR/python/psycopg2" ]; then
+    print_info "Contents of python directory:"
+    ls -la "$LAYER_DIR/python/" || true
     fail_check "psycopg2/ directory not found in python/. Layer build failed."
     exit 1
 fi
