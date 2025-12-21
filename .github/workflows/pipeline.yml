@@ -398,6 +398,176 @@ jobs:
           retention-days: 7
 
   # ============================================================================
+  # JOB 2.5: PUSH DOCKER IMAGES TO ECR
+  # ============================================================================
+  push-to-ecr:
+    name: Push Docker Images to ECR
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: build-test
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # Option A: Using IAM User (requires AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY secrets)
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+          # Option B: Using IAM Role with OIDC (more secure, comment out above and uncomment below)
+          # role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          # role-session-name: GitHubActions-ECR-Push
+          # aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Get ECR Repository URI
+        id: ecr-info
+        run: |
+          echo "🔍 Getting ECR repository information from CDK..."
+          
+          # Get repository URI from CDK outputs
+          REPO_URI=$(aws cloudformation describe-stacks \
+            --stack-name phaserai-ecr-dev \
+            --query 'Stacks[0].Outputs[?OutputKey==`RepositoryUri`].OutputValue' \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          
+          if [ -z "$REPO_URI" ]; then
+            echo "❌ ECR repository not found. Please deploy the ECR stack first:"
+            echo "   cd infra && cdk deploy phaserai-ecr-dev"
+            exit 1
+          fi
+          
+          echo "✅ Found ECR repository: $REPO_URI"
+          echo "repository-uri=$REPO_URI" >> $GITHUB_OUTPUT
+          
+          # Extract repository name
+          REPO_NAME=$(echo $REPO_URI | cut -d'/' -f2)
+          echo "repository-name=$REPO_NAME" >> $GITHUB_OUTPUT
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+      
+      - name: Extract Metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.ecr-info.outputs.repository-uri }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value={{date 'YYYYMMDD-HHmmss'}}
+          labels: |
+            org.opencontainers.image.title=PhaserAI
+            org.opencontainers.image.description=Conlang creation and management application
+            org.opencontainers.image.vendor=PhaserAI
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+      
+      - name: Build and Push Production Image to ECR
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL || 'https://dummy-url.supabase.co' }}
+            VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy-key' }}
+          cache-from: type=gha,scope=prod-ecr
+          cache-to: type=gha,mode=max,scope=prod-ecr
+      
+      - name: Build and Push Development Image to ECR
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.dev
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ steps.ecr-info.outputs.repository-uri }}:dev
+            ${{ steps.ecr-info.outputs.repository-uri }}:dev-${{ github.sha }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL || 'https://dummy-url.supabase.co' }}
+            VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy-key' }}
+          cache-from: type=gha,scope=dev-ecr
+          cache-to: type=gha,mode=max,scope=dev-ecr
+      
+      - name: Scan Images for Vulnerabilities
+        run: |
+          echo "🔍 Scanning images for vulnerabilities..."
+          
+          # Get repository name
+          REPO_NAME="${{ steps.ecr-info.outputs.repository-name }}"
+          
+          # Scan production image
+          echo "Scanning production image..."
+          aws ecr start-image-scan \
+            --repository-name "$REPO_NAME" \
+            --image-id imageTag=latest \
+            --region ${{ env.AWS_REGION }} || echo "Scan already in progress or failed"
+          
+          # Scan development image
+          echo "Scanning development image..."
+          aws ecr start-image-scan \
+            --repository-name "$REPO_NAME" \
+            --image-id imageTag=dev \
+            --region ${{ env.AWS_REGION }} || echo "Scan already in progress or failed"
+          
+          echo "✅ Vulnerability scans initiated"
+          echo "💡 View scan results in AWS ECR console"
+      
+      - name: Output Image Information
+        run: |
+          echo "📦 Docker Images Pushed to ECR"
+          echo "=============================="
+          echo "Registry: ${{ steps.login-ecr.outputs.registry }}"
+          echo "Repository: ${{ steps.ecr-info.outputs.repository-uri }}"
+          echo ""
+          echo "Production Images:"
+          echo "${{ steps.meta.outputs.tags }}" | while read -r tag; do
+            echo "  - $tag"
+          done
+          echo ""
+          echo "Development Images:"
+          echo "  - ${{ steps.ecr-info.outputs.repository-uri }}:dev"
+          echo "  - ${{ steps.ecr-info.outputs.repository-uri }}:dev-${{ github.sha }}"
+          echo ""
+          echo "Image Digest: ${{ steps.meta.outputs.digest }}"
+          echo ""
+          echo "🔗 View in AWS Console:"
+          echo "https://console.aws.amazon.com/ecr/repositories/private/${{ secrets.AWS_ACCOUNT_ID }}/${{ steps.ecr-info.outputs.repository-name }}?region=${{ env.AWS_REGION }}"
+
+  # ============================================================================
   # JOB 3: INFRASTRUCTURE VALIDATION
   # ============================================================================
   infrastructure-validation:
@@ -542,7 +712,7 @@ jobs:
     name: Deployment Preparation
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [build-test, infrastructure-validation]
+    needs: [build-test, infrastructure-validation, push-to-ecr]
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     
     outputs:
@@ -686,7 +856,7 @@ jobs:
     name: Notification & Cleanup
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [code-quality, build-test, infrastructure-validation, deployment-prep]
+    needs: [code-quality, build-test, infrastructure-validation, deployment-prep, push-to-ecr]
     if: always()
     
     steps:
@@ -697,6 +867,7 @@ jobs:
           echo "Code Quality: ${{ needs.code-quality.result }}"
           echo "Build & Test: ${{ needs.build-test.result }}"
           echo "Infrastructure: ${{ needs.infrastructure-validation.result }}"
+          echo "ECR Push: ${{ needs.push-to-ecr.result }}"
           echo "Deployment Prep: ${{ needs.deployment-prep.result }}"
           
           if [ "${{ needs.code-quality.result }}" = "success" ] && \

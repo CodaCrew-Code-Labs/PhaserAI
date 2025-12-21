@@ -7,6 +7,7 @@ import { ProductionApiStack } from '../lib/production-api-stack';
 import { BastionStack } from '../lib/bastion-stack';
 import { MigrationStack } from '../lib/migration-stack';
 import { BackupStack } from '../lib/backup-stack';
+import { EcrStack } from '../lib/ecr-stack';
 
 const app = new cdk.App();
 
@@ -34,6 +35,13 @@ const logoutUrls = app.node.tryGetContext('logoutUrls') || [
   'http://localhost:5173/',
   'http://localhost:3000/',
 ];
+
+// Create ECR stack first (no dependencies)
+const ecrStack = new EcrStack(app, `${appName}-ecr-${environment}`, {
+  appName,
+  environment,
+  env,
+});
 
 // Create production database stack
 const productionDatabaseStack = new ProductionDatabaseStack(app, `${appName}-prod-database-${environment}`, {

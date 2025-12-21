@@ -64,6 +64,8 @@ on:
 env:
   REGISTRY_GHCR: ghcr.io
   REGISTRY_DOCKERHUB: docker.io
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: phaserai
   IMAGE_NAME: phaserai
   
 jobs:
@@ -406,7 +408,7 @@ jobs:
     
     strategy:
       matrix:
-        registry: [ghcr]  # Add more registries as needed: [ghcr, dockerhub, ecr]
+        registry: [ghcr, ecr]  # Added ECR to the matrix
     
     steps:
       - name: Checkout Code
@@ -450,6 +452,7 @@ jobs:
           images: |
             ${{ matrix.registry == 'ghcr' && format('{0}/{1}/{2}', env.REGISTRY_GHCR, github.repository, env.IMAGE_NAME) || '' }}
             ${{ matrix.registry == 'dockerhub' && format('{0}/{1}/{2}', env.REGISTRY_DOCKERHUB, github.repository_owner, env.IMAGE_NAME) || '' }}
+            ${{ matrix.registry == 'ecr' && format('{0}.dkr.ecr.{1}.amazonaws.com/{2}', secrets.AWS_ACCOUNT_ID, env.AWS_REGION, env.ECR_REPOSITORY) || '' }}
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
