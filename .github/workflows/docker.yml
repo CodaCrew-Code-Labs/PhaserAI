@@ -140,10 +140,16 @@ jobs:
         run: |
           echo "🔍 Running lint checks before Docker build..."
           
+          # Debug: Show current directory and files
+          echo "Current directory: $(pwd)"
+          echo "Files in current directory:"
+          ls -la
+          
           # Verify ESLint config exists
           if [ ! -f "eslint.config.js" ]; then
             echo "❌ eslint.config.js not found"
-            ls -la eslint.config.*
+            echo "Looking for ESLint config files:"
+            find . -name "eslint.config.*" -o -name ".eslintrc.*" | head -10
             exit 1
           fi
           
