@@ -273,8 +273,14 @@ fi
 # ============================================================================
 print_check "Verifying file permissions..."
 
-# Check if files are readable
-UNREADABLE_FILES=$(find "$LAYER_DIR/python" -type f ! -readable | wc -l)
+# Check if files are readable (using portable test)
+UNREADABLE_FILES=0
+while IFS= read -r -d '' file; do
+    if [ ! -r "$file" ]; then
+        ((UNREADABLE_FILES++))
+    fi
+done < <(find "$LAYER_DIR/python" -type f -print0)
+
 if [ $UNREADABLE_FILES -eq 0 ]; then
     pass_check "All files are readable"
 else
@@ -285,17 +291,18 @@ fi
 SO_FILES=$(find "$LAYER_DIR/python" -name "*.so")
 if [ -n "$SO_FILES" ]; then
     EXECUTABLE_SO=0
-    for so_file in $SO_FILES; do
+    TOTAL_SO=0
+    while IFS= read -r so_file; do
+        ((TOTAL_SO++))
         if [ -x "$so_file" ]; then
             ((EXECUTABLE_SO++))
         fi
-    done
+    done <<< "$SO_FILES"
     
-    TOTAL_SO=$(echo "$SO_FILES" | wc -l)
     if [ $EXECUTABLE_SO -eq $TOTAL_SO ]; then
         pass_check "All .so files have executable permissions"
     else
-        warn_check "Some .so files may lack executable permissions"
+        warn_check "Some .so files may lack executable permissions ($EXECUTABLE_SO/$TOTAL_SO executable)"
     fi
 fi
 

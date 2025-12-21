@@ -139,8 +139,24 @@ jobs:
       - name: Lint Code for Docker Build
         run: |
           echo "🔍 Running lint checks before Docker build..."
-          pnpm run lint
-          echo "✅ Lint checks passed"
+          
+          # Verify ESLint config exists
+          if [ ! -f "eslint.config.js" ]; then
+            echo "❌ eslint.config.js not found"
+            ls -la eslint.config.*
+            exit 1
+          fi
+          
+          echo "✅ ESLint config found"
+          
+          # Run ESLint with explicit config
+          if pnpm run lint; then
+            echo "✅ Lint checks passed"
+          else
+            echo "❌ Lint checks failed"
+            echo "💡 Fix linting issues before building Docker images"
+            exit 1
+          fi
       
       - name: Check Code Formatting for Docker Build
         run: |

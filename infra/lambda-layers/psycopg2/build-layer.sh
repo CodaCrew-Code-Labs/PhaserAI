@@ -133,6 +133,15 @@ if command -v docker &> /dev/null; then
         find /var/task/python -name '*.pyc' -delete
         find /var/task/python -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true
         
+        echo '[Docker] Setting proper permissions on binary files...'
+        find /var/task/python -name '*.so' -exec chmod +x {} \;
+        
+        echo '[Docker] Final cleanup verification...'
+        PYC_COUNT=$(find /var/task/python -name '*.pyc' | wc -l)
+        CACHE_COUNT=$(find /var/task/python -name '__pycache__' -type d | wc -l)
+        echo "[Docker] Remaining .pyc files: $PYC_COUNT"
+        echo "[Docker] Remaining __pycache__ dirs: $CACHE_COUNT"
+        
         echo '[Docker] Listing installed packages...'
         ls -la /var/task/python/
         

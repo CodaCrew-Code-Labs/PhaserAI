@@ -94,7 +94,25 @@ jobs:
       - name: Quick Lint
         run: |
           echo "🔍 Running quick lint checks..."
-          pnpm run lint
+          
+          # Verify ESLint config exists
+          if [ ! -f "eslint.config.js" ]; then
+            echo "❌ eslint.config.js not found"
+            echo "Available config files:"
+            ls -la eslint.config.* || echo "No ESLint config files found"
+            exit 1
+          fi
+          
+          echo "✅ ESLint config found: eslint.config.js"
+          
+          # Run ESLint
+          if pnpm run lint; then
+            echo "✅ Lint checks passed"
+          else
+            echo "❌ Lint checks failed"
+            echo "💡 Fix linting issues in your PR"
+            exit 1
+          fi
       
       - name: PR Size Check
         run: |
