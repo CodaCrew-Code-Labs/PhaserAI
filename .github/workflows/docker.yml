@@ -68,12 +68,104 @@ env:
   
 jobs:
   # ============================================================================
-  # JOB 1: BUILD AND TEST DOCKER IMAGES
+  # JOB 1: PRE-BUILD VALIDATION
+  # ============================================================================
+  pre-build-validation:
+    name: Pre-Build Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8'
+      
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+      
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Validate Package Configuration
+        run: |
+          echo "🔍 Validating package configuration for Docker build..."
+          
+          # Check if required files exist
+          if [ ! -f "package.json" ]; then
+            echo "❌ package.json not found"
+            exit 1
+          fi
+          
+          if [ ! -f "pnpm-lock.yaml" ]; then
+            echo "❌ pnpm-lock.yaml not found"
+            exit 1
+          fi
+          
+          echo "✅ Package files validated"
+      
+      - name: Lint Code for Docker Build
+        run: |
+          echo "🔍 Running lint checks before Docker build..."
+          pnpm run lint
+          echo "✅ Lint checks passed"
+      
+      - name: Type Check for Docker Build
+        run: |
+          echo "🔍 Running type checks before Docker build..."
+          pnpm run type-check
+          echo "✅ Type checks passed"
+      
+      - name: Security Audit for Docker Build
+        run: |
+          echo "🔍 Running security audit before Docker build..."
+          pnpm audit --audit-level moderate || {
+            echo "⚠️ Security vulnerabilities found - review before building Docker images"
+            pnpm audit --audit-level moderate --json || true
+          }
+          echo "✅ Security audit completed"
+        continue-on-error: true
+      
+      - name: Analyze Build Context
+        run: |
+          echo "📊 Analyzing Docker build context..."
+          
+          # Check .dockerignore effectiveness
+          echo "Docker build context size:"
+          du -sh . --exclude=node_modules --exclude=.git
+          
+          # Check for large files that might slow down builds
+          echo "Large files in build context:"
+          find . -type f -size +10M -not -path "./node_modules/*" -not -path "./.git/*" | head -10
+          
+          echo "✅ Build context analysis completed"
+
+  # ============================================================================
+  # JOB 2: BUILD AND TEST DOCKER IMAGES
   # ============================================================================
   docker-build:
     name: Build Docker Images
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    needs: pre-build-validation
     
     outputs:
       image-digest: ${{ steps.build.outputs.digest }}
@@ -255,7 +347,7 @@ jobs:
           retention-days: 7
 
   # ============================================================================
-  # JOB 2: PUSH TO REGISTRIES
+  # JOB 3: PUSH TO REGISTRIES
   # ============================================================================
   docker-push:
     name: Push to Registry
@@ -347,7 +439,7 @@ jobs:
           retention-days: 30
 
   # ============================================================================
-  # JOB 3: IMAGE VERIFICATION
+  # JOB 4: IMAGE VERIFICATION
   # ============================================================================
   verify-images:
     name: Verify Pushed Images
@@ -395,13 +487,13 @@ jobs:
           done
 
   # ============================================================================
-  # JOB 4: CLEANUP AND NOTIFICATION
+  # JOB 5: CLEANUP AND NOTIFICATION
   # ============================================================================
   docker-summary:
     name: Docker Build Summary
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [docker-build, docker-push, verify-images]
+    needs: [pre-build-validation, docker-build, docker-push, verify-images]
     if: always()
     
     steps:
@@ -409,12 +501,13 @@ jobs:
         run: |
           echo "🐳 Docker Pipeline Summary"
           echo "=========================="
+          echo "Pre-Build Validation: ${{ needs.pre-build-validation.result }}"
           echo "Build: ${{ needs.docker-build.result }}"
           echo "Push: ${{ needs.docker-push.result }}"
           echo "Verify: ${{ needs.verify-images.result }}"
           echo "Should Push: ${{ needs.docker-build.outputs.should-push }}"
           
-          if [ "${{ needs.docker-build.result }}" = "success" ]; then
+          if [ "${{ needs.pre-build-validation.result }}" = "success" ] && [ "${{ needs.docker-build.result }}" = "success" ]; then
             echo "✅ Docker images built successfully"
             
             if [ "${{ needs.docker-build.outputs.should-push }}" = "true" ]; then
@@ -427,7 +520,12 @@ jobs:
               echo "ℹ️ Images built but not pushed (PR or test build)"
             fi
           else
-            echo "❌ Docker build failed"
+            if [ "${{ needs.pre-build-validation.result }}" != "success" ]; then
+              echo "❌ Pre-build validation failed"
+            fi
+            if [ "${{ needs.docker-build.result }}" != "success" ]; then
+              echo "❌ Docker build failed"
+            fi
           fi
           
           echo ""
