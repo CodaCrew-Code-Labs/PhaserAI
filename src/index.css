@@ -1,0 +1,261 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Whimsical Pagebound-inspired palette */
+    --background: 0 0% 100%;
+    --foreground: 240 10% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 20%;
+
+    --primary: 231 89% 70%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 280 60% 83%;
+    --secondary-foreground: 280 60% 30%;
+
+    --muted: 280 30% 96%;
+    --muted-foreground: 240 5% 45%;
+
+    --accent: 326 85% 68%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 280 30% 90%;
+    --input: 280 30% 90%;
+    --ring: 231 89% 70%;
+
+    --radius: 1rem;
+
+    --sidebar-background: 280 30% 98%;
+    --sidebar-foreground: 240 5% 26%;
+    --sidebar-primary: 231 89% 70%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 280 60% 95%;
+    --sidebar-accent-foreground: 280 60% 30%;
+    --sidebar-border: 280 30% 90%;
+    --sidebar-ring: 231 89% 70%;
+
+    /* Custom whimsical colors */
+    --lavender: 275 60% 83%;
+    --periwinkle: 231 89% 70%;
+    --hot-pink: 326 85% 68%;
+    --peachy: 27 85% 74%;
+    --aqua: 180 95% 81%;
+  }
+
+  .dark {
+    --background: 240 10% 8%;
+    --foreground: 0 0% 95%;
+
+    --card: 240 10% 10%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 240 10% 10%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 231 89% 70%;
+    --primary-foreground: 240 10% 8%;
+
+    --secondary: 280 40% 25%;
+    --secondary-foreground: 280 60% 90%;
+
+    --muted: 240 10% 15%;
+    --muted-foreground: 240 5% 65%;
+
+    --accent: 326 85% 68%;
+    --accent-foreground: 240 10% 8%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 10% 20%;
+    --input: 240 10% 20%;
+    --ring: 231 89% 70%;
+
+    --sidebar-background: 240 10% 6%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 231 89% 70%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 10% 15%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 240 10% 20%;
+    --sidebar-ring: 231 89% 70%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  @keyframes blob {
+    0% {
+      transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.9);
+    }
+    100% {
+      transform: translate(0px, 0px) scale(1);
+    }
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translate(0, 0) rotate(0deg);
+    }
+    33% {
+      transform: translate(30px, -30px) rotate(5deg);
+    }
+    66% {
+      transform: translate(-20px, 20px) rotate(-5deg);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  @keyframes wiggle {
+    0%, 100% {
+      transform: rotate(-3deg);
+    }
+    50% {
+      transform: rotate(3deg);
+    }
+  }
+
+  @keyframes bounce-gentle {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  @keyframes sparkle {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.5;
+      transform: scale(0.8);
+    }
+  }
+
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
+
+  .animate-float {
+    animation: float 20s ease-in-out infinite;
+  }
+
+  .animate-float-delayed {
+    animation: float 25s ease-in-out infinite;
+    animation-delay: -5s;
+  }
+
+  .animate-wiggle {
+    animation: wiggle 1s ease-in-out infinite;
+  }
+
+  .animate-bounce-gentle {
+    animation: bounce-gentle 2s ease-in-out infinite;
+  }
+
+  .animate-sparkle {
+    animation: sparkle 2s ease-in-out infinite;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+
+  .animation-delay-150 {
+    animation-delay: 150ms;
+  }
+
+  @keyframes pulse-slow {
+    0%, 100% {
+      opacity: 0.3;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.5;
+      transform: scale(1.05);
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(116, 139, 246, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(242, 105, 191, 0.8);
+    }
+  }
+
+  @keyframes gradient {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 8s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient 5s ease infinite;
+  }
+
+  /* Whimsical gradient backgrounds */
+  .bg-whimsical {
+    background: linear-gradient(135deg, #FFF8FC 0%, #F8F4FF 50%, #F0FAFF 100%);
+  }
+
+  .bg-whimsical-card {
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,244,255,0.9) 100%);
+  }
+}
