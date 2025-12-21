@@ -17,8 +17,8 @@ The CI/CD pipeline provides comprehensive automation for:
 **Comprehensive CI/CD pipeline for main development workflow**
 
 **Triggers:**
-- Push to `main` or `develop` branches
-- Pull requests to `main` or `develop`
+- Push to `main`, `master` or `develop` branches
+- Pull requests to `main`, `master` or `develop`
 - Manual dispatch with deployment options
 
 **Jobs:**
