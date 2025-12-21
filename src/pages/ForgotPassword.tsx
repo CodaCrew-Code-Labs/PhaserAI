@@ -16,14 +16,16 @@ const emailSchema = z.object({
   email: z.string().email('Invalid email address'),
 });
 
-const resetSchema = z.object({
-  code: z.string().length(6, 'Verification code must be 6 digits'),
-  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
-  confirmPassword: z.string(),
-}).refine((data) => data.newPassword === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
-});
+const resetSchema = z
+  .object({
+    code: z.string().length(6, 'Verification code must be 6 digits'),
+    newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
 type EmailFormData = z.infer<typeof emailSchema>;
 type ResetFormData = z.infer<typeof resetSchema>;
@@ -85,7 +87,7 @@ export default function ForgotPassword() {
       <div className="absolute top-20 right-20 w-72 h-72 bg-[#DDBCEE]/40 rounded-full blur-3xl animate-float" />
       <div className="absolute bottom-40 left-10 w-96 h-96 bg-[#A1FBFC]/30 rounded-full blur-3xl animate-float-delayed" />
       <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-[#F269BF]/20 rounded-full blur-3xl animate-pulse-slow" />
-      
+
       {/* Decorative elements */}
       <Star className="absolute top-32 left-[15%] w-6 h-6 text-[#F5B485] animate-pulse fill-[#F5B485]" />
       <Star className="absolute bottom-32 right-[20%] w-4 h-4 text-[#F269BF] animate-pulse fill-[#F269BF] animation-delay-2000" />
@@ -93,16 +95,19 @@ export default function ForgotPassword() {
 
       <Card className="relative w-full max-w-md bg-white/80 border-2 border-[#DDBCEE]/40 rounded-3xl shadow-xl backdrop-blur-sm">
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#F5B485]/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-        
+
         {step === 'success' ? (
           <>
             <CardHeader className="relative text-center">
               <div className="w-20 h-20 bg-gradient-to-br from-[#A1FBFC] to-[#748BF6] rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-[#A1FBFC]/40">
                 <CheckCircle className="h-10 w-10 text-white" />
               </div>
-              <CardTitle className="text-slate-800 text-2xl font-bold">Password Reset! ✨</CardTitle>
+              <CardTitle className="text-slate-800 text-2xl font-bold">
+                Password Reset! ✨
+              </CardTitle>
               <CardDescription className="text-slate-500">
-                Your password has been successfully reset. You can now log in with your new password.
+                Your password has been successfully reset. You can now log in with your new
+                password.
               </CardDescription>
             </CardHeader>
             <CardContent className="relative">
@@ -121,11 +126,14 @@ export default function ForgotPassword() {
                 <div className="w-12 h-12 bg-gradient-to-br from-[#748BF6] via-[#F269BF] to-[#F5B485] rounded-2xl flex items-center justify-center shadow-lg shadow-[#F269BF]/30 rotate-3">
                   <span className="text-white font-black text-2xl">P</span>
                 </div>
-                <span className="text-2xl font-black bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] bg-clip-text text-transparent">PhaserAI</span>
+                <span className="text-2xl font-black bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] bg-clip-text text-transparent">
+                  PhaserAI
+                </span>
               </Link>
               <CardTitle className="text-slate-800 text-2xl font-bold">Reset Password 🔑</CardTitle>
               <CardDescription className="text-slate-500">
-                Enter the code sent to <span className="font-semibold text-[#748BF6]">{userEmail}</span>
+                Enter the code sent to{' '}
+                <span className="font-semibold text-[#748BF6]">{userEmail}</span>
               </CardDescription>
             </CardHeader>
             <CardContent className="relative">
@@ -138,7 +146,9 @@ export default function ForgotPassword() {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="code" className="text-slate-700 font-medium">Verification Code</Label>
+                  <Label htmlFor="code" className="text-slate-700 font-medium">
+                    Verification Code
+                  </Label>
                   <div className="relative">
                     <KeyRound className="absolute left-3 top-3 h-4 w-4 text-[#748BF6]" />
                     <Input
@@ -151,12 +161,16 @@ export default function ForgotPassword() {
                     />
                   </div>
                   {resetForm.formState.errors.code && (
-                    <p className="text-sm text-red-500">{resetForm.formState.errors.code.message}</p>
+                    <p className="text-sm text-red-500">
+                      {resetForm.formState.errors.code.message}
+                    </p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="newPassword" className="text-slate-700 font-medium">New Password</Label>
+                  <Label htmlFor="newPassword" className="text-slate-700 font-medium">
+                    New Password
+                  </Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-[#748BF6]" />
                     <Input
@@ -168,12 +182,16 @@ export default function ForgotPassword() {
                     />
                   </div>
                   {resetForm.formState.errors.newPassword && (
-                    <p className="text-sm text-red-500">{resetForm.formState.errors.newPassword.message}</p>
+                    <p className="text-sm text-red-500">
+                      {resetForm.formState.errors.newPassword.message}
+                    </p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-slate-700 font-medium">Confirm New Password</Label>
+                  <Label htmlFor="confirmPassword" className="text-slate-700 font-medium">
+                    Confirm New Password
+                  </Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-[#748BF6]" />
                     <Input
@@ -185,7 +203,9 @@ export default function ForgotPassword() {
                     />
                   </div>
                   {resetForm.formState.errors.confirmPassword && (
-                    <p className="text-sm text-red-500">{resetForm.formState.errors.confirmPassword.message}</p>
+                    <p className="text-sm text-red-500">
+                      {resetForm.formState.errors.confirmPassword.message}
+                    </p>
                   )}
                 </div>
 
@@ -223,7 +243,9 @@ export default function ForgotPassword() {
                 <div className="w-12 h-12 bg-gradient-to-br from-[#748BF6] via-[#F269BF] to-[#F5B485] rounded-2xl flex items-center justify-center shadow-lg shadow-[#F269BF]/30 rotate-3 hover:rotate-6 transition-transform">
                   <span className="text-white font-black text-2xl">P</span>
                 </div>
-                <span className="text-2xl font-black bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] bg-clip-text text-transparent">PhaserAI</span>
+                <span className="text-2xl font-black bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] bg-clip-text text-transparent">
+                  PhaserAI
+                </span>
               </Link>
               <CardTitle className="text-slate-800 text-2xl font-bold">Reset Password 🔑</CardTitle>
               <CardDescription className="text-slate-500">
@@ -240,7 +262,9 @@ export default function ForgotPassword() {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-slate-700 font-medium">Email Address</Label>
+                  <Label htmlFor="email" className="text-slate-700 font-medium">
+                    Email Address
+                  </Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-[#748BF6]" />
                     <Input
@@ -252,7 +276,9 @@ export default function ForgotPassword() {
                     />
                   </div>
                   {emailForm.formState.errors.email && (
-                    <p className="text-sm text-red-500">{emailForm.formState.errors.email.message}</p>
+                    <p className="text-sm text-red-500">
+                      {emailForm.formState.errors.email.message}
+                    </p>
                   )}
                 </div>
 

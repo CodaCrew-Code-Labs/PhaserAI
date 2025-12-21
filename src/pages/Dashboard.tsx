@@ -7,7 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { LogOut, Plus, Languages, BookOpen, AlertCircle, Sparkles, Star, Heart } from 'lucide-react';
+import {
+  LogOut,
+  Plus,
+  Languages,
+  BookOpen,
+  AlertCircle,
+  Sparkles,
+  Star,
+  Heart,
+} from 'lucide-react';
 
 interface Language {
   id: string;
@@ -63,7 +72,7 @@ export default function Dashboard() {
 
   const resendVerificationEmail = async () => {
     if (!user?.email) return;
-    
+
     try {
       // For Cognito, we need to use the resend code function
       const { cognitoResendCode } = await import('@/lib/auth');
@@ -82,12 +91,12 @@ export default function Dashboard() {
       <div className="absolute bottom-40 left-10 w-96 h-96 bg-[#A1FBFC]/30 rounded-full blur-3xl animate-float-delayed" />
       <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-[#F269BF]/20 rounded-full blur-3xl animate-pulse-slow" />
       <div className="absolute bottom-20 right-1/4 w-80 h-80 bg-[#F5B485]/25 rounded-full blur-3xl animate-float" />
-      
+
       {/* Decorative elements */}
       <Star className="absolute top-32 left-[15%] w-6 h-6 text-[#F5B485] animate-pulse fill-[#F5B485]" />
       <Star className="absolute top-48 right-[20%] w-4 h-4 text-[#F269BF] animate-pulse fill-[#F269BF] animation-delay-2000" />
       <Heart className="absolute bottom-1/3 left-[10%] w-5 h-5 text-[#F269BF]/60 animate-float fill-[#F269BF]/40" />
-      
+
       <div className="relative container max-w-7xl mx-auto py-12 px-6">
         {/* Header Section */}
         <div className="flex justify-between items-start mb-12">
@@ -103,10 +112,16 @@ export default function Dashboard() {
                 <p className="text-sm text-[#748BF6] font-semibold">Dashboard</p>
               </div>
             </div>
-            <p className="text-slate-600 text-lg">Welcome back, <span className="text-[#F269BF] font-semibold relative z-10">{user?.username || user?.email?.split('@')[0] || 'User'}</span> ✨</p>
+            <p className="text-slate-600 text-lg">
+              Welcome back,{' '}
+              <span className="text-[#F269BF] font-semibold relative z-10">
+                {user?.username || user?.email?.split('@')[0] || 'User'}
+              </span>{' '}
+              ✨
+            </p>
           </div>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={handleSignOut}
             className="text-slate-600 hover:text-[#F269BF] hover:bg-[#DDBCEE]/20 rounded-full px-6 transition-all duration-300"
           >
@@ -122,9 +137,9 @@ export default function Dashboard() {
               <span className="text-slate-700 font-medium">
                 Please verify your email address to access all features ✉️
               </span>
-              <Button 
-                variant="link" 
-                onClick={resendVerificationEmail} 
+              <Button
+                variant="link"
+                onClick={resendVerificationEmail}
                 className="text-[#F269BF] hover:text-[#748BF6] font-bold"
               >
                 Resend Email
@@ -144,8 +159,12 @@ export default function Dashboard() {
                 </div>
                 <div className="h-3 w-3 rounded-full bg-[#A1FBFC] animate-pulse" />
               </div>
-              <CardTitle className="text-slate-600 text-sm font-semibold uppercase tracking-wider">Languages</CardTitle>
-              <CardDescription className="text-slate-500 text-xs">Constructed languages</CardDescription>
+              <CardTitle className="text-slate-600 text-sm font-semibold uppercase tracking-wider">
+                Languages
+              </CardTitle>
+              <CardDescription className="text-slate-500 text-xs">
+                Constructed languages
+              </CardDescription>
             </CardHeader>
             <CardContent className="relative">
               <div className="text-5xl font-black text-slate-800">{languages.length}</div>
@@ -161,7 +180,9 @@ export default function Dashboard() {
                 </div>
                 <div className="h-3 w-3 rounded-full bg-[#DDBCEE] animate-pulse" />
               </div>
-              <CardTitle className="text-slate-600 text-sm font-semibold uppercase tracking-wider">Total Words</CardTitle>
+              <CardTitle className="text-slate-600 text-sm font-semibold uppercase tracking-wider">
+                Total Words
+              </CardTitle>
               <CardDescription className="text-slate-500 text-xs">Lexicon entries</CardDescription>
             </CardHeader>
             <CardContent className="relative">
@@ -178,8 +199,12 @@ export default function Dashboard() {
                 </div>
                 <div className="h-3 w-3 rounded-full bg-[#F5B485] animate-pulse" />
               </div>
-              <CardTitle className="text-slate-600 text-sm font-semibold uppercase tracking-wider">AI Checks</CardTitle>
-              <CardDescription className="text-slate-500 text-xs">Collision detections</CardDescription>
+              <CardTitle className="text-slate-600 text-sm font-semibold uppercase tracking-wider">
+                AI Checks
+              </CardTitle>
+              <CardDescription className="text-slate-500 text-xs">
+                Collision detections
+              </CardDescription>
             </CardHeader>
             <CardContent className="relative">
               <div className="text-5xl font-black text-slate-800">0</div>
@@ -193,7 +218,7 @@ export default function Dashboard() {
             <h2 className="text-3xl font-black text-slate-800 mb-1">Your Languages</h2>
             <p className="text-slate-500">Manage and explore your constructed languages ✨</p>
           </div>
-          <Button 
+          <Button
             onClick={() => navigate('/language/new')}
             className="bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] hover:opacity-90 text-white font-bold rounded-full px-8 shadow-lg shadow-[#F269BF]/40 hover:shadow-[#F269BF]/60 hover:scale-105 transition-all duration-300"
           >
@@ -221,8 +246,11 @@ export default function Dashboard() {
                 <Languages className="h-12 w-12 text-white" />
               </div>
               <h3 className="text-3xl font-black text-slate-800 mb-3">No languages yet</h3>
-              <p className="text-slate-600 mb-8 text-center max-w-md">Create your first constructed language and start building your unique linguistic system ✨</p>
-              <Button 
+              <p className="text-slate-600 mb-8 text-center max-w-md">
+                Create your first constructed language and start building your unique linguistic
+                system ✨
+              </p>
+              <Button
                 onClick={() => navigate('/language/new')}
                 className="bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] hover:opacity-90 text-white font-bold text-lg px-10 py-6 rounded-full shadow-xl shadow-[#F269BF]/40 hover:shadow-[#F269BF]/60 hover:scale-105 transition-all duration-300"
               >
@@ -235,22 +263,49 @@ export default function Dashboard() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {languages.map((language, index) => {
               const colors = [
-                { border: 'border-[#A1FBFC]', bg: 'from-[#A1FBFC]/20 to-[#748BF6]/20', shadow: 'shadow-[#A1FBFC]/30', accent: '#A1FBFC' },
-                { border: 'border-[#DDBCEE]', bg: 'from-[#DDBCEE]/20 to-[#F269BF]/20', shadow: 'shadow-[#DDBCEE]/30', accent: '#DDBCEE' },
-                { border: 'border-[#F269BF]', bg: 'from-[#F269BF]/20 to-[#F5B485]/20', shadow: 'shadow-[#F269BF]/30', accent: '#F269BF' },
-                { border: 'border-[#F5B485]', bg: 'from-[#F5B485]/20 to-[#748BF6]/20', shadow: 'shadow-[#F5B485]/30', accent: '#F5B485' },
-                { border: 'border-[#748BF6]', bg: 'from-[#748BF6]/20 to-[#A1FBFC]/20', shadow: 'shadow-[#748BF6]/30', accent: '#748BF6' },
+                {
+                  border: 'border-[#A1FBFC]',
+                  bg: 'from-[#A1FBFC]/20 to-[#748BF6]/20',
+                  shadow: 'shadow-[#A1FBFC]/30',
+                  accent: '#A1FBFC',
+                },
+                {
+                  border: 'border-[#DDBCEE]',
+                  bg: 'from-[#DDBCEE]/20 to-[#F269BF]/20',
+                  shadow: 'shadow-[#DDBCEE]/30',
+                  accent: '#DDBCEE',
+                },
+                {
+                  border: 'border-[#F269BF]',
+                  bg: 'from-[#F269BF]/20 to-[#F5B485]/20',
+                  shadow: 'shadow-[#F269BF]/30',
+                  accent: '#F269BF',
+                },
+                {
+                  border: 'border-[#F5B485]',
+                  bg: 'from-[#F5B485]/20 to-[#748BF6]/20',
+                  shadow: 'shadow-[#F5B485]/30',
+                  accent: '#F5B485',
+                },
+                {
+                  border: 'border-[#748BF6]',
+                  bg: 'from-[#748BF6]/20 to-[#A1FBFC]/20',
+                  shadow: 'shadow-[#748BF6]/30',
+                  accent: '#748BF6',
+                },
               ];
               const color = colors[index % colors.length];
-              
+
               return (
-                <Card 
-                  key={language.id} 
+                <Card
+                  key={language.id}
                   className={`group relative overflow-hidden bg-white/70 border-2 ${color.border}/40 hover:${color.border} rounded-3xl transition-all duration-300 cursor-pointer hover:scale-105 hover:shadow-xl hover:${color.shadow} backdrop-blur-sm`}
                   onClick={() => navigate(`/language/${language.id}`)}
                 >
-                  <div className={`absolute top-0 right-0 w-40 h-40 bg-gradient-to-br ${color.bg} rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500`} />
-                  
+                  <div
+                    className={`absolute top-0 right-0 w-40 h-40 bg-gradient-to-br ${color.bg} rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500`}
+                  />
+
                   <CardHeader className="relative">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
@@ -266,27 +321,43 @@ export default function Dashboard() {
                       </Badge>
                     </div>
                   </CardHeader>
-                  
+
                   <CardContent className="relative space-y-3">
                     <div className="flex items-center justify-between p-3 rounded-2xl bg-white/50 border border-slate-200/50">
                       <span className="text-slate-600 text-sm font-medium">Consonants</span>
-                      <span className="text-slate-800 font-black text-lg">{language.phonemes.consonants.length}</span>
+                      <span className="text-slate-800 font-black text-lg">
+                        {language.phonemes.consonants.length}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-2xl bg-white/50 border border-slate-200/50">
                       <span className="text-slate-600 text-sm font-medium">Vowels</span>
-                      <span className="text-slate-800 font-black text-lg">{language.phonemes.vowels.length}</span>
+                      <span className="text-slate-800 font-black text-lg">
+                        {language.phonemes.vowels.length}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-2xl bg-white/50 border border-slate-200/50">
                       <span className="text-slate-600 text-sm font-medium">Syllable Pattern</span>
-                      <span className="text-slate-800 font-mono font-bold">{language.syllables}</span>
+                      <span className="text-slate-800 font-mono font-bold">
+                        {language.syllables}
+                      </span>
                     </div>
                   </CardContent>
-                  
+
                   {/* Hover Arrow */}
                   <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div className="h-10 w-10 rounded-full bg-gradient-to-r from-[#748BF6] to-[#F269BF] flex items-center justify-center shadow-lg">
-                      <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                      <svg
+                        className="h-5 w-5 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2.5}
+                          d="M9 5l7 7-7 7"
+                        />
                       </svg>
                     </div>
                   </div>

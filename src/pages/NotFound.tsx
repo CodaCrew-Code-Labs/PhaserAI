@@ -8,7 +8,7 @@ export default function NotFoundPage() {
       <div className="absolute top-20 right-20 w-72 h-72 bg-[#DDBCEE]/40 rounded-full blur-3xl animate-float" />
       <div className="absolute bottom-40 left-10 w-96 h-96 bg-[#A1FBFC]/30 rounded-full blur-3xl animate-float-delayed" />
       <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-[#F269BF]/20 rounded-full blur-3xl animate-pulse-slow" />
-      
+
       {/* Decorative elements */}
       <Star className="absolute top-32 left-[15%] w-6 h-6 text-[#F5B485] animate-pulse fill-[#F5B485]" />
       <Star className="absolute bottom-32 right-[20%] w-4 h-4 text-[#F269BF] animate-pulse fill-[#F269BF] animation-delay-2000" />
@@ -26,14 +26,14 @@ export default function NotFoundPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-          <Button 
+          <Button
             asChild
             className="bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] hover:opacity-90 text-white font-bold rounded-full px-8 shadow-lg shadow-[#F269BF]/40"
           >
             <a href="/">Return Home</a>
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => window.history.back()}
             className="border-2 border-[#DDBCEE] text-[#748BF6] hover:bg-[#DDBCEE]/20 hover:border-[#F269BF] font-bold rounded-full px-8"
           >

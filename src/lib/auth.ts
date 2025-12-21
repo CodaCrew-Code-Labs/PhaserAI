@@ -1,10 +1,10 @@
 // AWS Cognito Authentication Service
 import { Amplify } from 'aws-amplify';
-import { 
-  signIn, 
-  signUp, 
-  signOut, 
-  confirmSignUp, 
+import {
+  signIn,
+  signUp,
+  signOut,
+  confirmSignUp,
   resendSignUpCode,
   resetPassword,
   confirmResetPassword,
@@ -32,8 +32,8 @@ export interface AuthError {
 
 // Sign up with email and password
 export async function cognitoSignUp(
-  email: string, 
-  password: string, 
+  email: string,
+  password: string,
   username: string
 ): Promise<{ isSignUpComplete: boolean; userId?: string; nextStep?: string }> {
   try {
@@ -47,7 +47,7 @@ export async function cognitoSignUp(
         },
       },
     });
-    
+
     return {
       isSignUpComplete: result.isSignUpComplete,
       userId: result.userId,
@@ -59,10 +59,7 @@ export async function cognitoSignUp(
 }
 
 // Confirm sign up with verification code
-export async function cognitoConfirmSignUp(
-  email: string, 
-  code: string
-): Promise<boolean> {
+export async function cognitoConfirmSignUp(email: string, code: string): Promise<boolean> {
   try {
     const result = await confirmSignUp({
       username: email,
@@ -84,20 +81,17 @@ export async function cognitoResendCode(email: string): Promise<void> {
 }
 
 // Sign in with email and password
-export async function cognitoSignIn(
-  email: string, 
-  password: string
-): Promise<CognitoUser> {
+export async function cognitoSignIn(email: string, password: string): Promise<CognitoUser> {
   try {
     const result = await signIn({
       username: email,
       password,
     });
-    
+
     if (result.isSignedIn) {
       return await getCurrentCognitoUser();
     }
-    
+
     throw new Error('Sign in incomplete. Additional steps required.');
   } catch (error) {
     throw formatAuthError(error);
@@ -127,7 +121,7 @@ export async function getCurrentCognitoUser(): Promise<CognitoUser | null> {
   try {
     const user = await getCurrentUser();
     const attributes = await fetchUserAttributes();
-    
+
     return {
       userId: user.userId,
       username: attributes.preferred_username || attributes.email?.split('@')[0] || user.username,
@@ -182,7 +176,7 @@ export async function cognitoConfirmForgotPassword(
 // Format auth errors for better UX
 function formatAuthError(error: unknown): AuthError {
   const err = error as { name?: string; message?: string };
-  
+
   const errorMessages: Record<string, string> = {
     UserNotFoundException: 'No account found with this email',
     NotAuthorizedException: 'Incorrect email or password',
@@ -194,7 +188,7 @@ function formatAuthError(error: unknown): AuthError {
     LimitExceededException: 'Too many attempts. Please try again later',
     InvalidParameterException: 'Invalid input provided',
   };
-  
+
   return {
     name: err.name || 'AuthError',
     message: errorMessages[err.name || ''] || err.message || 'An authentication error occurred',

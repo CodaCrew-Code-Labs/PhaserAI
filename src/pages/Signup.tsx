@@ -9,19 +9,30 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Mail, Lock, User, AlertCircle, Star, Heart, KeyRound } from 'lucide-react';
-import { cognitoSignUp, cognitoConfirmSignUp, cognitoResendCode, cognitoSignInWithGoogle } from '@/lib/auth';
+import {
+  cognitoSignUp,
+  cognitoConfirmSignUp,
+  cognitoResendCode,
+  cognitoSignInWithGoogle,
+} from '@/lib/auth';
 import { useAuthStore } from '@/lib/auth-store';
 import { toast } from 'sonner';
 
-const signupSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  username: z.string().min(3, 'Username must be at least 3 characters').max(20, 'Username must be less than 20 characters').regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
-});
+const signupSchema = z
+  .object({
+    email: z.string().email('Invalid email address'),
+    username: z
+      .string()
+      .min(3, 'Username must be at least 3 characters')
+      .max(20, 'Username must be less than 20 characters')
+      .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
 const verificationSchema = z.object({
   code: z.string().length(6, 'Verification code must be 6 digits'),
@@ -45,7 +56,8 @@ export default function Signup() {
     if (user) {
       navigate('/dashboard');
     }
-  }, [user, navigate]);  const signupForm = useForm<SignupFormData>({
+  }, [user, navigate]);
+  const signupForm = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
   });
 
@@ -59,7 +71,7 @@ export default function Signup() {
 
     try {
       const result = await cognitoSignUp(data.email, data.password, data.username);
-      
+
       if (result.isSignUpComplete) {
         toast.success('Account created successfully! ✨');
         navigate('/login');
@@ -115,7 +127,7 @@ export default function Signup() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     setError('');
-    
+
     try {
       await cognitoSignInWithGoogle();
     } catch (err) {
@@ -132,15 +144,18 @@ export default function Signup() {
       <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#FFF8FC] via-[#F8F4FF] to-[#F0FAFF] flex items-center justify-center p-4">
         <div className="absolute top-20 right-20 w-72 h-72 bg-[#DDBCEE]/40 rounded-full blur-3xl animate-float" />
         <div className="absolute bottom-40 left-10 w-96 h-96 bg-[#A1FBFC]/30 rounded-full blur-3xl animate-float-delayed" />
-        
+
         <Card className="relative w-full max-w-md bg-white/80 border-2 border-[#A1FBFC]/40 rounded-3xl shadow-xl backdrop-blur-sm">
           <CardHeader className="text-center">
             <div className="w-20 h-20 bg-gradient-to-br from-[#748BF6] via-[#F269BF] to-[#F5B485] rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-[#F269BF]/40">
               <KeyRound className="h-10 w-10 text-white" />
             </div>
-            <CardTitle className="text-slate-800 text-2xl font-bold">Verify Your Email ✉️</CardTitle>
+            <CardTitle className="text-slate-800 text-2xl font-bold">
+              Verify Your Email ✉️
+            </CardTitle>
             <CardDescription className="text-slate-500">
-              We sent a 6-digit code to <span className="font-semibold text-[#748BF6]">{userEmail}</span>
+              We sent a 6-digit code to{' '}
+              <span className="font-semibold text-[#748BF6]">{userEmail}</span>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -153,7 +168,9 @@ export default function Signup() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="code" className="text-slate-700 font-medium">Verification Code</Label>
+                <Label htmlFor="code" className="text-slate-700 font-medium">
+                  Verification Code
+                </Label>
                 <Input
                   id="code"
                   type="text"
@@ -163,7 +180,9 @@ export default function Signup() {
                   {...verificationForm.register('code')}
                 />
                 {verificationForm.formState.errors.code && (
-                  <p className="text-sm text-red-500">{verificationForm.formState.errors.code.message}</p>
+                  <p className="text-sm text-red-500">
+                    {verificationForm.formState.errors.code.message}
+                  </p>
                 )}
               </div>
 
@@ -215,7 +234,7 @@ export default function Signup() {
       <div className="absolute top-20 right-20 w-72 h-72 bg-[#DDBCEE]/40 rounded-full blur-3xl animate-float" />
       <div className="absolute bottom-40 left-10 w-96 h-96 bg-[#A1FBFC]/30 rounded-full blur-3xl animate-float-delayed" />
       <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-[#F269BF]/20 rounded-full blur-3xl animate-pulse-slow" />
-      
+
       {/* Decorative elements */}
       <Star className="absolute top-32 left-[15%] w-6 h-6 text-[#F5B485] animate-pulse fill-[#F5B485]" />
       <Star className="absolute bottom-32 right-[20%] w-4 h-4 text-[#F269BF] animate-pulse fill-[#F269BF] animation-delay-2000" />
@@ -228,9 +247,13 @@ export default function Signup() {
             <div className="w-12 h-12 bg-gradient-to-br from-[#748BF6] via-[#F269BF] to-[#F5B485] rounded-2xl flex items-center justify-center shadow-lg shadow-[#F269BF]/30 rotate-3 hover:rotate-6 transition-transform">
               <span className="text-white font-black text-2xl">P</span>
             </div>
-            <span className="text-2xl font-black bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] bg-clip-text text-transparent">PhaserAI</span>
+            <span className="text-2xl font-black bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] bg-clip-text text-transparent">
+              PhaserAI
+            </span>
           </Link>
-          <CardTitle className="text-slate-800 text-2xl font-bold">Create Your Account ✨</CardTitle>
+          <CardTitle className="text-slate-800 text-2xl font-bold">
+            Create Your Account ✨
+          </CardTitle>
           <CardDescription className="text-slate-500">
             Start building your conlang lexicon today
           </CardDescription>
@@ -248,10 +271,22 @@ export default function Signup() {
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             ) : (
               <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                />
               </svg>
             )}
             Continue with Google
@@ -275,7 +310,9 @@ export default function Signup() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700 font-medium">Email</Label>
+              <Label htmlFor="email" className="text-slate-700 font-medium">
+                Email
+              </Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-[#748BF6]" />
                 <Input
@@ -292,7 +329,9 @@ export default function Signup() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-slate-700 font-medium">Username</Label>
+              <Label htmlFor="username" className="text-slate-700 font-medium">
+                Username
+              </Label>
               <div className="relative">
                 <User className="absolute left-3 top-3 h-4 w-4 text-[#748BF6]" />
                 <Input
@@ -304,12 +343,16 @@ export default function Signup() {
                 />
               </div>
               {signupForm.formState.errors.username && (
-                <p className="text-sm text-red-500">{signupForm.formState.errors.username.message}</p>
+                <p className="text-sm text-red-500">
+                  {signupForm.formState.errors.username.message}
+                </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-700 font-medium">Password</Label>
+              <Label htmlFor="password" className="text-slate-700 font-medium">
+                Password
+              </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-[#748BF6]" />
                 <Input
@@ -321,7 +364,9 @@ export default function Signup() {
                 />
               </div>
               {signupForm.formState.errors.password && (
-                <p className="text-sm text-red-500">{signupForm.formState.errors.password.message}</p>
+                <p className="text-sm text-red-500">
+                  {signupForm.formState.errors.password.message}
+                </p>
               )}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-600">
                 <p className="font-medium text-slate-700 mb-1">Password requirements:</p>
@@ -347,7 +392,9 @@ export default function Signup() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-slate-700 font-medium">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-slate-700 font-medium">
+                Confirm Password
+              </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-[#748BF6]" />
                 <Input
@@ -359,7 +406,9 @@ export default function Signup() {
                 />
               </div>
               {signupForm.formState.errors.confirmPassword && (
-                <p className="text-sm text-red-500">{signupForm.formState.errors.confirmPassword.message}</p>
+                <p className="text-sm text-red-500">
+                  {signupForm.formState.errors.confirmPassword.message}
+                </p>
               )}
             </div>
 

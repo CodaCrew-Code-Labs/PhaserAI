@@ -36,7 +36,11 @@ export default function Login() {
     }
   }, [user, navigate]);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       rememberMe: false,
@@ -66,7 +70,7 @@ export default function Login() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     setError('');
-    
+
     try {
       await cognitoSignInWithGoogle();
       // Redirect happens automatically
@@ -84,7 +88,7 @@ export default function Login() {
       <div className="absolute top-20 right-20 w-72 h-72 bg-[#DDBCEE]/40 rounded-full blur-3xl animate-float" />
       <div className="absolute bottom-40 left-10 w-96 h-96 bg-[#A1FBFC]/30 rounded-full blur-3xl animate-float-delayed" />
       <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-[#F269BF]/20 rounded-full blur-3xl animate-pulse-slow" />
-      
+
       {/* Decorative elements */}
       <Star className="absolute top-32 left-[15%] w-6 h-6 text-[#F5B485] animate-pulse fill-[#F5B485]" />
       <Star className="absolute bottom-32 right-[20%] w-4 h-4 text-[#F269BF] animate-pulse fill-[#F269BF] animation-delay-2000" />
@@ -97,7 +101,9 @@ export default function Login() {
             <div className="w-12 h-12 bg-gradient-to-br from-[#748BF6] via-[#F269BF] to-[#F5B485] rounded-2xl flex items-center justify-center shadow-lg shadow-[#F269BF]/30 rotate-3 hover:rotate-6 transition-transform">
               <span className="text-white font-black text-2xl">P</span>
             </div>
-            <span className="text-2xl font-black bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] bg-clip-text text-transparent">PhaserAI</span>
+            <span className="text-2xl font-black bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] bg-clip-text text-transparent">
+              PhaserAI
+            </span>
           </Link>
           <CardTitle className="text-slate-800 text-2xl font-bold">Welcome Back ✨</CardTitle>
           <CardDescription className="text-slate-500">
@@ -156,7 +162,9 @@ export default function Login() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700 font-medium">Email</Label>
+              <Label htmlFor="email" className="text-slate-700 font-medium">
+                Email
+              </Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-4 w-4 text-[#748BF6]" />
                 <Input
@@ -167,15 +175,18 @@ export default function Login() {
                   {...register('email')}
                 />
               </div>
-              {errors.email && (
-                <p className="text-sm text-red-500">{errors.email.message}</p>
-              )}
+              {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-slate-700 font-medium">Password</Label>
-                <Link to="/forgot-password" className="text-sm text-[#F269BF] hover:text-[#748BF6] font-medium">
+                <Label htmlFor="password" className="text-slate-700 font-medium">
+                  Password
+                </Label>
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-[#F269BF] hover:text-[#748BF6] font-medium"
+                >
                   Forgot?
                 </Link>
               </div>
@@ -189,9 +200,7 @@ export default function Login() {
                   {...register('password')}
                 />
               </div>
-              {errors.password && (
-                <p className="text-sm text-red-500">{errors.password.message}</p>
-              )}
+              {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
             </div>
 
             <div className="flex items-center space-x-2">
@@ -200,10 +209,7 @@ export default function Login() {
                 {...register('rememberMe')}
                 className="border-[#DDBCEE] data-[state=checked]:bg-[#748BF6] data-[state=checked]:border-[#748BF6]"
               />
-              <label
-                htmlFor="rememberMe"
-                className="text-sm text-slate-600 cursor-pointer"
-              >
+              <label htmlFor="rememberMe" className="text-sm text-slate-600 cursor-pointer">
                 Remember me
               </label>
             </div>

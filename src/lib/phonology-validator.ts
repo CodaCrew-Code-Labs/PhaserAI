@@ -44,7 +44,9 @@ export class PhonologyValidator {
     if (invalidPhonemes.length > 0) {
       violations.push({
         type: 'invalid_phoneme',
-        description: `Contains invalid phonemes: ${invalidPhonemes.join(', ')}. Only use phonemes from your inventory.`,
+        description: `Contains invalid phonemes: ${invalidPhonemes.join(
+          ', '
+        )}. Only use phonemes from your inventory.`,
         severity: 'error',
       });
     }

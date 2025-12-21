@@ -3,7 +3,8 @@
 
 import type { User, Language, Word, Translation, Etymology, Violation } from './database';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://en7b8h3pbb.execute-api.us-east-1.amazonaws.com/prod';
+const API_URL =
+  import.meta.env.VITE_API_URL || 'https://en7b8h3pbb.execute-api.us-east-1.amazonaws.com/prod';
 
 interface ApiError {
   error?: string;
@@ -19,8 +20,8 @@ class ApiClient {
       ...options,
     });
 
-    const data = await response.json().catch(() => ({})) as T & ApiError;
-    
+    const data = (await response.json().catch(() => ({}))) as T & ApiError;
+
     if (!response.ok) {
       throw new Error(data.error || `HTTP ${response.status}`);
     }
@@ -62,7 +63,10 @@ class ApiClient {
     });
   }
 
-  async updateLanguage(languageId: string, data: Partial<Omit<Language, 'id' | 'created_at'>>): Promise<Language> {
+  async updateLanguage(
+    languageId: string,
+    data: Partial<Omit<Language, 'id' | 'created_at'>>
+  ): Promise<Language> {
     return this.request<Language>(`/languages/${languageId}`, {
       method: 'PUT',
       body: JSON.stringify(data),

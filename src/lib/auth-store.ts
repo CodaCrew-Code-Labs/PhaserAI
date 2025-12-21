@@ -1,11 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { 
-  getCurrentCognitoUser, 
-  cognitoSignOut, 
-  getAuthSession,
-  type CognitoUser 
-} from './auth';
+import { getCurrentCognitoUser, cognitoSignOut, getAuthSession, type CognitoUser } from './auth';
 import type { User } from '@/types/database';
 
 interface AuthState {
@@ -19,7 +14,7 @@ interface AuthState {
   isVerified: boolean;
   // Access token for API calls
   accessToken: string | null;
-  
+
   // Actions
   setUser: (user: CognitoUser | null) => void;
   setProfile: (profile: User | null) => void;
@@ -28,7 +23,7 @@ interface AuthState {
   setAccessToken: (token: string | null) => void;
   logout: () => void;
   signOut: () => Promise<void>;
-  
+
   // Initialize auth state from Cognito
   initializeAuth: () => Promise<void>;
   refreshSession: () => Promise<void>;
@@ -42,42 +37,44 @@ export const useAuthStore = create<AuthState>()(
       loading: true,
       isVerified: false,
       accessToken: null,
-      
-      setUser: (user) => set({ 
-        user, 
-        isVerified: user?.emailVerified ?? false, 
-        loading: false 
-      }),
-      
+
+      setUser: (user) =>
+        set({
+          user,
+          isVerified: user?.emailVerified ?? false,
+          loading: false,
+        }),
+
       setProfile: (profile) => set({ profile }),
-      
+
       setLoading: (loading) => set({ loading }),
-      
+
       setVerified: (verified) => set({ isVerified: verified }),
-      
+
       setAccessToken: (accessToken) => set({ accessToken }),
-      
-      logout: () => set({ 
-        user: null, 
-        profile: null, 
-        isVerified: false, 
-        accessToken: null 
-      }),
-      
+
+      logout: () =>
+        set({
+          user: null,
+          profile: null,
+          isVerified: false,
+          accessToken: null,
+        }),
+
       signOut: async () => {
         try {
           await cognitoSignOut();
         } catch (error) {
           console.error('Sign out error:', error);
         }
-        set({ 
-          user: null, 
-          profile: null, 
-          isVerified: false, 
-          accessToken: null 
+        set({
+          user: null,
+          profile: null,
+          isVerified: false,
+          accessToken: null,
         });
       },
-      
+
       // Initialize auth state on app load
       initializeAuth: async () => {
         set({ loading: true });
@@ -85,33 +82,33 @@ export const useAuthStore = create<AuthState>()(
           const user = await getCurrentCognitoUser();
           if (user) {
             const session = await getAuthSession();
-            set({ 
-              user, 
+            set({
+              user,
               isVerified: user.emailVerified,
               accessToken: session.accessToken || null,
-              loading: false 
+              loading: false,
             });
           } else {
-            set({ 
-              user: null, 
-              profile: null, 
-              isVerified: false, 
+            set({
+              user: null,
+              profile: null,
+              isVerified: false,
               accessToken: null,
-              loading: false 
+              loading: false,
             });
           }
         } catch (error) {
           console.error('Auth initialization error:', error);
-          set({ 
-            user: null, 
-            profile: null, 
-            isVerified: false, 
+          set({
+            user: null,
+            profile: null,
+            isVerified: false,
             accessToken: null,
-            loading: false 
+            loading: false,
           });
         }
       },
-      
+
       // Refresh the session token
       refreshSession: async () => {
         try {
@@ -126,10 +123,10 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'phaserai-auth',
-      partialize: (state) => ({ 
-        user: state.user, 
-        profile: state.profile, 
-        isVerified: state.isVerified 
+      partialize: (state) => ({
+        user: state.user,
+        profile: state.profile,
+        isVerified: state.isVerified,
       }),
     }
   )

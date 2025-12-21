@@ -119,7 +119,8 @@
   }
 
   @keyframes float {
-    0%, 100% {
+    0%,
+    100% {
       transform: translate(0, 0) rotate(0deg);
     }
     33% {
@@ -140,7 +141,8 @@
   }
 
   @keyframes wiggle {
-    0%, 100% {
+    0%,
+    100% {
       transform: rotate(-3deg);
     }
     50% {
@@ -149,7 +151,8 @@
   }
 
   @keyframes bounce-gentle {
-    0%, 100% {
+    0%,
+    100% {
       transform: translateY(0);
     }
     50% {
@@ -158,7 +161,8 @@
   }
 
   @keyframes sparkle {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 1;
       transform: scale(1);
     }
@@ -206,7 +210,8 @@
   }
 
   @keyframes pulse-slow {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 0.3;
       transform: scale(1);
     }
@@ -217,7 +222,8 @@
   }
 
   @keyframes pulse-glow {
-    0%, 100% {
+    0%,
+    100% {
       box-shadow: 0 0 20px rgba(116, 139, 246, 0.5);
     }
     50% {
@@ -252,10 +258,10 @@
 
   /* Whimsical gradient backgrounds */
   .bg-whimsical {
-    background: linear-gradient(135deg, #FFF8FC 0%, #F8F4FF 50%, #F0FAFF 100%);
+    background: linear-gradient(135deg, #fff8fc 0%, #f8f4ff 50%, #f0faff 100%);
   }
 
   .bg-whimsical-card {
-    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,244,255,0.9) 100%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 244, 255, 0.9) 100%);
   }
 }

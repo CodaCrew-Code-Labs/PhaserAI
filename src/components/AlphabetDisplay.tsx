@@ -12,28 +12,34 @@ interface PhonemeGroup {
   type: 'consonant' | 'vowel' | 'diphthong';
 }
 
-export function AlphabetDisplay({ 
-  consonantMappings, 
-  vowelMappings, 
-  diphthongMappings 
+export function AlphabetDisplay({
+  consonantMappings,
+  vowelMappings,
+  diphthongMappings,
 }: AlphabetDisplayProps) {
-  const consonants: PhonemeGroup[] = Object.entries(consonantMappings).map(([alphabet, ipa]) => ({ 
-    alphabet, 
-    ipa, 
-    type: 'consonant' as const 
-  })).sort((a, b) => a.alphabet.localeCompare(b.alphabet));
+  const consonants: PhonemeGroup[] = Object.entries(consonantMappings)
+    .map(([alphabet, ipa]) => ({
+      alphabet,
+      ipa,
+      type: 'consonant' as const,
+    }))
+    .sort((a, b) => a.alphabet.localeCompare(b.alphabet));
 
-  const vowels: PhonemeGroup[] = Object.entries(vowelMappings).map(([alphabet, ipa]) => ({ 
-    alphabet, 
-    ipa, 
-    type: 'vowel' as const 
-  })).sort((a, b) => a.alphabet.localeCompare(b.alphabet));
+  const vowels: PhonemeGroup[] = Object.entries(vowelMappings)
+    .map(([alphabet, ipa]) => ({
+      alphabet,
+      ipa,
+      type: 'vowel' as const,
+    }))
+    .sort((a, b) => a.alphabet.localeCompare(b.alphabet));
 
-  const diphthongs: PhonemeGroup[] = Object.entries(diphthongMappings).map(([alphabet, ipa]) => ({ 
-    alphabet, 
-    ipa, 
-    type: 'diphthong' as const 
-  })).sort((a, b) => a.alphabet.localeCompare(b.alphabet));
+  const diphthongs: PhonemeGroup[] = Object.entries(diphthongMappings)
+    .map(([alphabet, ipa]) => ({
+      alphabet,
+      ipa,
+      type: 'diphthong' as const,
+    }))
+    .sort((a, b) => a.alphabet.localeCompare(b.alphabet));
 
   const PhonemeCard = ({ item }: { item: PhonemeGroup }) => {
     const getTypeColor = (type: 'consonant' | 'vowel' | 'diphthong') => {
@@ -55,13 +61,9 @@ export function AlphabetDisplay({
         `}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 hover:opacity-100 transition-opacity" />
-        <div className="relative text-xl font-bold text-center drop-shadow-sm">
-          {item.alphabet}
-        </div>
+        <div className="relative text-xl font-bold text-center drop-shadow-sm">{item.alphabet}</div>
         <div className="relative text-center text-xs opacity-70 my-1">↓</div>
-        <div className="relative text-base font-mono text-center font-semibold">
-          {item.ipa}
-        </div>
+        <div className="relative text-base font-mono text-center font-semibold">{item.ipa}</div>
       </div>
     );
   };

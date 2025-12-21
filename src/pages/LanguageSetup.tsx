@@ -9,7 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -34,9 +42,9 @@ export default function LanguageSetup() {
   const [consonantTags, setConsonantTags] = useState<string[]>([]);
   const [vowelTags, setVowelTags] = useState<string[]>([]);
   const [diphthongTags, setDiphthongTags] = useState<string[]>([]);
-  const [consonantMappings, setConsonantMappings] = useState<{[key: string]: string}>({});
-  const [vowelMappings, setVowelMappings] = useState<{[key: string]: string}>({});
-  const [diphthongMappings, setDiphthongMappings] = useState<{[key: string]: string}>({});
+  const [consonantMappings, setConsonantMappings] = useState<{ [key: string]: string }>({});
+  const [vowelMappings, setVowelMappings] = useState<{ [key: string]: string }>({});
+  const [diphthongMappings, setDiphthongMappings] = useState<{ [key: string]: string }>({});
   const [currentConsonant, setCurrentConsonant] = useState('');
   const [currentConsonantAlphabet, setCurrentConsonantAlphabet] = useState('');
   const [currentVowel, setCurrentVowel] = useState('');
@@ -57,9 +65,16 @@ export default function LanguageSetup() {
   });
 
   const addConsonant = () => {
-    if (currentConsonant.trim() && currentConsonantAlphabet.trim() && !consonantTags.includes(currentConsonant.trim())) {
+    if (
+      currentConsonant.trim() &&
+      currentConsonantAlphabet.trim() &&
+      !consonantTags.includes(currentConsonant.trim())
+    ) {
       const newTags = [...consonantTags, currentConsonant.trim()];
-      const newMappings = {...consonantMappings, [currentConsonantAlphabet.trim()]: currentConsonant.trim()};
+      const newMappings = {
+        ...consonantMappings,
+        [currentConsonantAlphabet.trim()]: currentConsonant.trim(),
+      };
       setConsonantTags(newTags);
       setConsonantMappings(newMappings);
       form.setValue('consonants', newTags.join(' '));
@@ -70,8 +85,10 @@ export default function LanguageSetup() {
 
   const removeConsonant = (tag: string) => {
     const newTags = consonantTags.filter((t) => t !== tag);
-    const alphabetKey = Object.keys(consonantMappings).find(key => consonantMappings[key] === tag);
-    const newMappings = {...consonantMappings};
+    const alphabetKey = Object.keys(consonantMappings).find(
+      (key) => consonantMappings[key] === tag
+    );
+    const newMappings = { ...consonantMappings };
     if (alphabetKey) delete newMappings[alphabetKey];
     setConsonantTags(newTags);
     setConsonantMappings(newMappings);
@@ -79,9 +96,13 @@ export default function LanguageSetup() {
   };
 
   const addVowel = () => {
-    if (currentVowel.trim() && currentVowelAlphabet.trim() && !vowelTags.includes(currentVowel.trim())) {
+    if (
+      currentVowel.trim() &&
+      currentVowelAlphabet.trim() &&
+      !vowelTags.includes(currentVowel.trim())
+    ) {
       const newTags = [...vowelTags, currentVowel.trim()];
-      const newMappings = {...vowelMappings, [currentVowelAlphabet.trim()]: currentVowel.trim()};
+      const newMappings = { ...vowelMappings, [currentVowelAlphabet.trim()]: currentVowel.trim() };
       setVowelTags(newTags);
       setVowelMappings(newMappings);
       form.setValue('vowels', newTags.join(' '));
@@ -92,8 +113,8 @@ export default function LanguageSetup() {
 
   const removeVowel = (tag: string) => {
     const newTags = vowelTags.filter((t) => t !== tag);
-    const alphabetKey = Object.keys(vowelMappings).find(key => vowelMappings[key] === tag);
-    const newMappings = {...vowelMappings};
+    const alphabetKey = Object.keys(vowelMappings).find((key) => vowelMappings[key] === tag);
+    const newMappings = { ...vowelMappings };
     if (alphabetKey) delete newMappings[alphabetKey];
     setVowelTags(newTags);
     setVowelMappings(newMappings);
@@ -101,9 +122,16 @@ export default function LanguageSetup() {
   };
 
   const addDiphthong = () => {
-    if (currentDiphthong.trim() && currentDiphthongAlphabet.trim() && !diphthongTags.includes(currentDiphthong.trim())) {
+    if (
+      currentDiphthong.trim() &&
+      currentDiphthongAlphabet.trim() &&
+      !diphthongTags.includes(currentDiphthong.trim())
+    ) {
       const newTags = [...diphthongTags, currentDiphthong.trim()];
-      const newMappings = {...diphthongMappings, [currentDiphthongAlphabet.trim()]: currentDiphthong.trim()};
+      const newMappings = {
+        ...diphthongMappings,
+        [currentDiphthongAlphabet.trim()]: currentDiphthong.trim(),
+      };
       setDiphthongTags(newTags);
       setDiphthongMappings(newMappings);
       form.setValue('diphthongs', newTags.join(' '));
@@ -114,8 +142,10 @@ export default function LanguageSetup() {
 
   const removeDiphthong = (tag: string) => {
     const newTags = diphthongTags.filter((t) => t !== tag);
-    const alphabetKey = Object.keys(diphthongMappings).find(key => diphthongMappings[key] === tag);
-    const newMappings = {...diphthongMappings};
+    const alphabetKey = Object.keys(diphthongMappings).find(
+      (key) => diphthongMappings[key] === tag
+    );
+    const newMappings = { ...diphthongMappings };
     if (alphabetKey) delete newMappings[alphabetKey];
     setDiphthongTags(newTags);
     setDiphthongMappings(newMappings);
@@ -186,16 +216,16 @@ export default function LanguageSetup() {
       <div className="absolute top-20 right-20 w-72 h-72 bg-[#DDBCEE]/40 rounded-full blur-3xl animate-float" />
       <div className="absolute bottom-40 left-10 w-96 h-96 bg-[#A1FBFC]/30 rounded-full blur-3xl animate-float-delayed" />
       <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-[#F269BF]/20 rounded-full blur-3xl animate-pulse-slow" />
-      
+
       {/* Decorative elements */}
       <Star className="absolute top-32 left-[15%] w-6 h-6 text-[#F5B485] animate-pulse fill-[#F5B485]" />
       <Star className="absolute bottom-32 right-[20%] w-4 h-4 text-[#F269BF] animate-pulse fill-[#F269BF] animation-delay-2000" />
       <Heart className="absolute top-1/4 right-[10%] w-5 h-5 text-[#F269BF]/60 animate-float fill-[#F269BF]/40" />
-      
+
       <div className="relative container max-w-4xl mx-auto py-12 px-6">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate('/dashboard')} 
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/dashboard')}
           className="mb-8 text-slate-600 hover:text-[#F269BF] hover:bg-[#DDBCEE]/20 rounded-full px-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -204,7 +234,7 @@ export default function LanguageSetup() {
 
         <Card className="relative overflow-hidden bg-white/80 border-2 border-[#DDBCEE]/40 rounded-3xl shadow-xl backdrop-blur-sm">
           <div className="absolute top-0 right-0 w-64 h-64 bg-[#A1FBFC]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          
+
           <CardHeader className="relative border-b border-[#DDBCEE]/30">
             <div className="flex items-start justify-between">
               <div className="space-y-2">
@@ -212,7 +242,9 @@ export default function LanguageSetup() {
                   <div className="w-12 h-12 bg-gradient-to-br from-[#748BF6] via-[#F269BF] to-[#F5B485] rounded-2xl flex items-center justify-center shadow-lg shadow-[#F269BF]/30 rotate-3">
                     <Sparkles className="h-6 w-6 text-white" />
                   </div>
-                  <CardTitle className="text-3xl font-black text-slate-800">Create Language</CardTitle>
+                  <CardTitle className="text-3xl font-black text-slate-800">
+                    Create Language
+                  </CardTitle>
                 </div>
                 <CardDescription className="text-slate-500 max-w-2xl">
                   Define the phonological system and rules for your constructed language ✨
@@ -222,10 +254,12 @@ export default function LanguageSetup() {
             {(consonantTags.length === 0 || vowelTags.length === 0) && (
               <Alert className="mt-4 bg-[#F5B485]/20 border-2 border-[#F5B485]/40 rounded-2xl">
                 <AlertCircle className="h-4 w-4 text-[#F5B485]" />
-                <AlertTitle className="text-slate-700 font-semibold text-sm">Required phonemes missing</AlertTitle>
+                <AlertTitle className="text-slate-700 font-semibold text-sm">
+                  Required phonemes missing
+                </AlertTitle>
                 <AlertDescription className="text-slate-600 text-xs">
-                  {consonantTags.length === 0 && "Add at least one consonant. "}
-                  {vowelTags.length === 0 && "Add at least one vowel."}
+                  {consonantTags.length === 0 && 'Add at least one consonant. '}
+                  {vowelTags.length === 0 && 'Add at least one vowel.'}
                 </AlertDescription>
               </Alert>
             )}
@@ -240,13 +274,15 @@ export default function LanguageSetup() {
                     <FormItem>
                       <FormLabel className="text-slate-700 font-medium">Language Name</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="e.g., Elvish, Klingon, Dothraki" 
-                          {...field} 
+                        <Input
+                          placeholder="e.g., Elvish, Klingon, Dothraki"
+                          {...field}
                           className="bg-white border-2 border-[#DDBCEE]/40 focus:border-[#748BF6] text-slate-800 placeholder:text-slate-400 rounded-xl h-11"
                         />
                       </FormControl>
-                      <FormDescription className="text-slate-500 text-xs">Give your language a unique name</FormDescription>
+                      <FormDescription className="text-slate-500 text-xs">
+                        Give your language a unique name
+                      </FormDescription>
                       <FormMessage className="text-red-500 text-xs" />
                     </FormItem>
                   )}
@@ -254,8 +290,8 @@ export default function LanguageSetup() {
 
                 <Tabs defaultValue="consonants" className="w-full">
                   <TabsList className="grid w-full grid-cols-3 bg-white/50 border-2 border-[#DDBCEE]/30 p-1 rounded-2xl">
-                    <TabsTrigger 
-                      value="consonants" 
+                    <TabsTrigger
+                      value="consonants"
                       className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#A1FBFC] data-[state=active]:to-[#748BF6] data-[state=active]:text-white text-slate-500 rounded-xl font-semibold transition-all"
                     >
                       Consonants
@@ -265,8 +301,8 @@ export default function LanguageSetup() {
                         </Badge>
                       )}
                     </TabsTrigger>
-                    <TabsTrigger 
-                      value="vowels" 
+                    <TabsTrigger
+                      value="vowels"
                       className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#DDBCEE] data-[state=active]:to-[#F269BF] data-[state=active]:text-white text-slate-500 rounded-xl font-semibold transition-all"
                     >
                       Vowels
@@ -276,8 +312,8 @@ export default function LanguageSetup() {
                         </Badge>
                       )}
                     </TabsTrigger>
-                    <TabsTrigger 
-                      value="diphthongs" 
+                    <TabsTrigger
+                      value="diphthongs"
                       className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#F5B485] data-[state=active]:to-[#F269BF] data-[state=active]:text-white text-slate-500 rounded-xl font-semibold transition-all"
                     >
                       Diphthongs
@@ -295,7 +331,9 @@ export default function LanguageSetup() {
                       name="consonants"
                       render={() => (
                         <FormItem>
-                          <FormLabel className="text-slate-700 font-medium">Consonant Inventory</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">
+                            Consonant Inventory
+                          </FormLabel>
                           <div className="space-y-3">
                             <div className="grid grid-cols-2 gap-3">
                               <FormControl>
@@ -321,23 +359,36 @@ export default function LanguageSetup() {
                                 />
                               </FormControl>
                             </div>
-                            <Button 
-                              type="button" 
-                              onClick={addConsonant} 
+                            <Button
+                              type="button"
+                              onClick={addConsonant}
                               className="w-full bg-gradient-to-r from-[#A1FBFC] to-[#748BF6] hover:opacity-90 text-white font-bold rounded-xl h-10"
                             >
                               <Plus className="mr-2 h-4 w-4" />
                               Add Consonant
                             </Button>
                           </div>
-                          <FormDescription className="text-slate-500 text-xs">Map alphabet letters to IPA symbols. Both fields required.</FormDescription>
+                          <FormDescription className="text-slate-500 text-xs">
+                            Map alphabet letters to IPA symbols. Both fields required.
+                          </FormDescription>
                           <div className="flex flex-wrap gap-2 mt-4">
                             {consonantTags.map((tag) => {
-                              const alphabetKey = Object.keys(consonantMappings).find(key => consonantMappings[key] === tag);
+                              const alphabetKey = Object.keys(consonantMappings).find(
+                                (key) => consonantMappings[key] === tag
+                              );
                               return (
-                                <Badge key={tag} className="px-3 py-1.5 bg-[#A1FBFC]/30 text-[#748BF6] border-2 border-[#A1FBFC]/50 hover:bg-[#A1FBFC]/50 rounded-full font-semibold">
-                                  <span className="font-mono">{alphabetKey} → {tag}</span>
-                                  <button type="button" onClick={() => removeConsonant(tag)} className="ml-2 hover:text-red-500 transition-colors">
+                                <Badge
+                                  key={tag}
+                                  className="px-3 py-1.5 bg-[#A1FBFC]/30 text-[#748BF6] border-2 border-[#A1FBFC]/50 hover:bg-[#A1FBFC]/50 rounded-full font-semibold"
+                                >
+                                  <span className="font-mono">
+                                    {alphabetKey} → {tag}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeConsonant(tag)}
+                                    className="ml-2 hover:text-red-500 transition-colors"
+                                  >
                                     <X className="h-3.5 w-3.5" />
                                   </button>
                                 </Badge>
@@ -356,7 +407,9 @@ export default function LanguageSetup() {
                       name="vowels"
                       render={() => (
                         <FormItem>
-                          <FormLabel className="text-slate-700 font-medium">Vowel Inventory</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">
+                            Vowel Inventory
+                          </FormLabel>
                           <div className="space-y-3">
                             <div className="grid grid-cols-2 gap-3">
                               <FormControl>
@@ -382,23 +435,36 @@ export default function LanguageSetup() {
                                 />
                               </FormControl>
                             </div>
-                            <Button 
-                              type="button" 
-                              onClick={addVowel} 
+                            <Button
+                              type="button"
+                              onClick={addVowel}
                               className="w-full bg-gradient-to-r from-[#DDBCEE] to-[#F269BF] hover:opacity-90 text-white font-bold rounded-xl h-10"
                             >
                               <Plus className="mr-2 h-4 w-4" />
                               Add Vowel
                             </Button>
                           </div>
-                          <FormDescription className="text-slate-500 text-xs">Map alphabet letters to IPA symbols. Both fields required.</FormDescription>
+                          <FormDescription className="text-slate-500 text-xs">
+                            Map alphabet letters to IPA symbols. Both fields required.
+                          </FormDescription>
                           <div className="flex flex-wrap gap-2 mt-4">
                             {vowelTags.map((tag) => {
-                              const alphabetKey = Object.keys(vowelMappings).find(key => vowelMappings[key] === tag);
+                              const alphabetKey = Object.keys(vowelMappings).find(
+                                (key) => vowelMappings[key] === tag
+                              );
                               return (
-                                <Badge key={tag} className="px-3 py-1.5 bg-[#DDBCEE]/30 text-[#F269BF] border-2 border-[#DDBCEE]/50 hover:bg-[#DDBCEE]/50 rounded-full font-semibold">
-                                  <span className="font-mono">{alphabetKey} → {tag}</span>
-                                  <button type="button" onClick={() => removeVowel(tag)} className="ml-2 hover:text-red-500 transition-colors">
+                                <Badge
+                                  key={tag}
+                                  className="px-3 py-1.5 bg-[#DDBCEE]/30 text-[#F269BF] border-2 border-[#DDBCEE]/50 hover:bg-[#DDBCEE]/50 rounded-full font-semibold"
+                                >
+                                  <span className="font-mono">
+                                    {alphabetKey} → {tag}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeVowel(tag)}
+                                    className="ml-2 hover:text-red-500 transition-colors"
+                                  >
                                     <X className="h-3.5 w-3.5" />
                                   </button>
                                 </Badge>
@@ -417,7 +483,9 @@ export default function LanguageSetup() {
                       name="diphthongs"
                       render={() => (
                         <FormItem>
-                          <FormLabel className="text-slate-700 font-medium">Diphthongs (Optional)</FormLabel>
+                          <FormLabel className="text-slate-700 font-medium">
+                            Diphthongs (Optional)
+                          </FormLabel>
                           <div className="space-y-3">
                             <div className="grid grid-cols-2 gap-3">
                               <FormControl>
@@ -443,23 +511,36 @@ export default function LanguageSetup() {
                                 />
                               </FormControl>
                             </div>
-                            <Button 
-                              type="button" 
-                              onClick={addDiphthong} 
+                            <Button
+                              type="button"
+                              onClick={addDiphthong}
                               className="w-full bg-gradient-to-r from-[#F5B485] to-[#F269BF] hover:opacity-90 text-white font-bold rounded-xl h-10"
                             >
                               <Plus className="mr-2 h-4 w-4" />
                               Add Diphthong
                             </Button>
                           </div>
-                          <FormDescription className="text-slate-500 text-xs">Map alphabet letters to IPA symbols. Both fields required.</FormDescription>
+                          <FormDescription className="text-slate-500 text-xs">
+                            Map alphabet letters to IPA symbols. Both fields required.
+                          </FormDescription>
                           <div className="flex flex-wrap gap-2 mt-4">
                             {diphthongTags.map((tag) => {
-                              const alphabetKey = Object.keys(diphthongMappings).find(key => diphthongMappings[key] === tag);
+                              const alphabetKey = Object.keys(diphthongMappings).find(
+                                (key) => diphthongMappings[key] === tag
+                              );
                               return (
-                                <Badge key={tag} className="px-3 py-1.5 bg-[#F5B485]/30 text-[#F269BF] border-2 border-[#F5B485]/50 hover:bg-[#F5B485]/50 rounded-full font-semibold">
-                                  <span className="font-mono">{alphabetKey} → {tag}</span>
-                                  <button type="button" onClick={() => removeDiphthong(tag)} className="ml-2 hover:text-red-500 transition-colors">
+                                <Badge
+                                  key={tag}
+                                  className="px-3 py-1.5 bg-[#F5B485]/30 text-[#F269BF] border-2 border-[#F5B485]/50 hover:bg-[#F5B485]/50 rounded-full font-semibold"
+                                >
+                                  <span className="font-mono">
+                                    {alphabetKey} → {tag}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeDiphthong(tag)}
+                                    className="ml-2 hover:text-red-500 transition-colors"
+                                  >
                                     <X className="h-3.5 w-3.5" />
                                   </button>
                                 </Badge>
@@ -478,16 +559,19 @@ export default function LanguageSetup() {
                   name="syllables"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-slate-700 font-medium">Syllable Structure</FormLabel>
+                      <FormLabel className="text-slate-700 font-medium">
+                        Syllable Structure
+                      </FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="e.g., CV, CVC, CCVC, (C)V(C)" 
-                          {...field} 
+                        <Input
+                          placeholder="e.g., CV, CVC, CCVC, (C)V(C)"
+                          {...field}
                           className="bg-white border-2 border-[#DDBCEE]/40 focus:border-[#748BF6] text-slate-800 placeholder:text-slate-400 rounded-xl h-11"
                         />
                       </FormControl>
                       <FormDescription className="text-slate-500 text-xs">
-                        Define allowed syllable patterns. Use C for consonant, V for vowel, () for optional elements.
+                        Define allowed syllable patterns. Use C for consonant, V for vowel, () for
+                        optional elements.
                       </FormDescription>
                       <FormMessage className="text-red-500 text-xs" />
                     </FormItem>
@@ -499,7 +583,9 @@ export default function LanguageSetup() {
                   name="rules"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-slate-700 font-medium">Phonotactic Rules (Optional)</FormLabel>
+                      <FormLabel className="text-slate-700 font-medium">
+                        Phonotactic Rules (Optional)
+                      </FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="e.g., No consonant clusters at word-final position&#10;/s/ cannot follow /ʃ/&#10;Vowels cannot be adjacent"
@@ -507,24 +593,26 @@ export default function LanguageSetup() {
                           {...field}
                         />
                       </FormControl>
-                      <FormDescription className="text-slate-500 text-xs">Describe any phonological constraints or rules for your language</FormDescription>
+                      <FormDescription className="text-slate-500 text-xs">
+                        Describe any phonological constraints or rules for your language
+                      </FormDescription>
                       <FormMessage className="text-red-500 text-xs" />
                     </FormItem>
                   )}
                 />
 
                 <div className="flex gap-3 pt-6 border-t border-[#DDBCEE]/30">
-                  <Button 
-                    type="submit" 
-                    disabled={isLoading || consonantTags.length === 0 || vowelTags.length === 0} 
+                  <Button
+                    type="submit"
+                    disabled={isLoading || consonantTags.length === 0 || vowelTags.length === 0}
                     className="flex-1 bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] hover:opacity-90 text-white font-bold rounded-full h-11 shadow-lg shadow-[#F269BF]/40"
                   >
                     <Save className="mr-2 h-4 w-4" />
                     {isLoading ? 'Creating...' : 'Create Language ✨'}
                   </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={() => navigate('/dashboard')}
                     className="border-2 border-[#DDBCEE] text-slate-600 hover:bg-[#DDBCEE]/20 rounded-full h-11"
                   >

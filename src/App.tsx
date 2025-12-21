@@ -28,13 +28,19 @@ const queryClient = new QueryClient({
   },
 });
 
-const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) => (
+const ErrorFallback = ({
+  error,
+  resetErrorBoundary,
+}: {
+  error: Error;
+  resetErrorBoundary: () => void;
+}) => (
   <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#FFF8FC] via-[#F8F4FF] to-[#F0FAFF] flex items-center justify-center">
     {/* Whimsical floating shapes */}
     <div className="absolute top-20 right-20 w-72 h-72 bg-[#DDBCEE]/40 rounded-full blur-3xl animate-float" />
     <div className="absolute bottom-40 left-10 w-96 h-96 bg-[#A1FBFC]/30 rounded-full blur-3xl animate-float-delayed" />
     <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-[#F269BF]/20 rounded-full blur-3xl animate-pulse-slow" />
-    
+
     {/* Decorative elements */}
     <Star className="absolute top-32 left-[15%] w-6 h-6 text-[#F5B485] animate-pulse fill-[#F5B485]" />
     <Heart className="absolute bottom-1/3 right-[10%] w-5 h-5 text-[#F269BF]/60 animate-float fill-[#F269BF]/40" />
@@ -57,7 +63,7 @@ const ErrorFallback = ({ error, resetErrorBoundary }: { error: Error; resetError
             Try Again
           </button>
           <button
-            onClick={() => window.location.href = '/'}
+            onClick={() => (window.location.href = '/')}
             className="px-6 py-2 bg-white border-2 border-[#DDBCEE] text-slate-600 rounded-full font-bold hover:bg-[#DDBCEE]/20 transition-all"
           >
             Go Home
@@ -80,7 +86,7 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
 }
 
 const App = () => (
-  <ErrorBoundary 
+  <ErrorBoundary
     FallbackComponent={ErrorFallback}
     onError={(error, errorInfo) => {
       if (import.meta.env.DEV) {
@@ -98,11 +104,46 @@ const App = () => (
               <Route path="/signup" element={<Signup />} />
               <Route path="/login" element={<Login />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/language/new" element={<ProtectedRoute><LanguageSetup /></ProtectedRoute>} />
-              <Route path="/language/:id" element={<ProtectedRoute><LanguageDetail /></ProtectedRoute>} />
-              <Route path="/language/:id/words" element={<ProtectedRoute><LexiconManager /></ProtectedRoute>} />
-              <Route path="/language/:id/etymology/:wordId" element={<ProtectedRoute><EtymologyTree /></ProtectedRoute>} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/language/new"
+                element={
+                  <ProtectedRoute>
+                    <LanguageSetup />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/language/:id"
+                element={
+                  <ProtectedRoute>
+                    <LanguageDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/language/:id/words"
+                element={
+                  <ProtectedRoute>
+                    <LexiconManager />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/language/:id/etymology/:wordId"
+                element={
+                  <ProtectedRoute>
+                    <EtymologyTree />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthInitializer>

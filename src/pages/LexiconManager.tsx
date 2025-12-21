@@ -11,13 +11,50 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { ArrowLeft, Plus, Edit2, Trash2, Search, Download, Upload, Sparkles, Filter, Loader2, FileJson, FileSpreadsheet, AlertCircle, CheckCircle, GitBranch } from 'lucide-react';
+import {
+  ArrowLeft,
+  Plus,
+  Edit2,
+  Trash2,
+  Search,
+  Download,
+  Upload,
+  Sparkles,
+  Filter,
+  Loader2,
+  FileJson,
+  FileSpreadsheet,
+  AlertCircle,
+  CheckCircle,
+  GitBranch,
+} from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -42,13 +79,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-const POS_OPTIONS = ['noun', 'verb', 'adjective', 'adverb', 'pronoun', 'preposition', 'conjunction', 'interjection'];
+const POS_OPTIONS = [
+  'noun',
+  'verb',
+  'adjective',
+  'adverb',
+  'pronoun',
+  'preposition',
+  'conjunction',
+  'interjection',
+];
 const LANGUAGE_OPTIONS = [
   { code: 'en', name: 'English' },
   { code: 'es', name: 'Spanish' },
@@ -60,7 +102,14 @@ const LANGUAGE_OPTIONS = [
   { code: 'zh', name: 'Chinese' },
 ];
 
-const DERIVATION_TYPES = ['compound', 'affix', 'sound_change', 'borrowing', 'semantic_shift', 'other'];
+const DERIVATION_TYPES = [
+  'compound',
+  'affix',
+  'sound_change',
+  'borrowing',
+  'semantic_shift',
+  'other',
+];
 
 const wordSchema = z.object({
   word: z.string().min(1, 'Word is required'),
@@ -70,10 +119,14 @@ const wordSchema = z.object({
   parent_word_id: z.string().optional(),
   derivation_type: z.string().optional(),
   derivation_notes: z.string().optional(),
-  translations: z.array(z.object({
-    language_code: z.string(),
-    meaning: z.string().min(1, 'Translation is required'),
-  })).min(1, 'Add at least one translation'),
+  translations: z
+    .array(
+      z.object({
+        language_code: z.string(),
+        meaning: z.string().min(1, 'Translation is required'),
+      })
+    )
+    .min(1, 'Add at least one translation'),
 });
 
 type WordFormData = z.infer<typeof wordSchema>;
@@ -159,14 +212,19 @@ export default function LexiconManager() {
   const [generatorDialogOpen, setGeneratorDialogOpen] = useState(false);
   const [generatorMeaning, setGeneratorMeaning] = useState('');
   const [generatorPos, setGeneratorPos] = useState('');
-  const [generatedWords, setGeneratedWords] = useState<Array<{
-    word: string;
-    ipa: string;
-    syllables: string;
-    reasoning: string;
-  }>>([]);
+  const [generatedWords, setGeneratedWords] = useState<
+    Array<{
+      word: string;
+      ipa: string;
+      syllables: string;
+      reasoning: string;
+    }>
+  >([]);
   const [showWordSelection, setShowWordSelection] = useState(false);
-  const [validationResult, setValidationResult] = useState<{ isValid: boolean; violations: Violation[] } | null>(null);
+  const [validationResult, setValidationResult] = useState<{
+    isValid: boolean;
+    violations: Violation[];
+  } | null>(null);
   const [availableParentWords, setAvailableParentWords] = useState<Word[]>([]);
 
   const form = useForm<WordFormData>({
@@ -209,50 +267,50 @@ export default function LexiconManager() {
   // Auto-convert alphabet to IPA
   const convertAlphabetToIPA = (alphabetText: string): string => {
     if (!language?.alphabet_mappings) return alphabetText;
-    
+
     let result = alphabetText.toLowerCase();
     const allMappings = {
       ...language.alphabet_mappings.diphthongs,
       ...language.alphabet_mappings.consonants,
       ...language.alphabet_mappings.vowels,
     };
-    
+
     // Sort by length (longest first) to handle multi-character mappings
     const sortedKeys = Object.keys(allMappings).sort((a, b) => b.length - a.length);
-    
+
     for (const alphabet of sortedKeys) {
       const ipa = allMappings[alphabet];
       result = result.replace(new RegExp(alphabet, 'g'), ipa);
     }
-    
+
     return result;
   };
 
   // Auto-convert IPA to alphabet
   const convertIPAToAlphabet = (ipaText: string): string => {
     if (!language?.alphabet_mappings) return ipaText;
-    
+
     let result = ipaText;
     const allMappings = {
       ...language.alphabet_mappings.diphthongs,
       ...language.alphabet_mappings.consonants,
       ...language.alphabet_mappings.vowels,
     };
-    
+
     // Create reverse mapping (IPA -> alphabet)
     const reverseMapping: { [key: string]: string } = {};
     for (const [alphabet, ipa] of Object.entries(allMappings)) {
       reverseMapping[ipa] = alphabet;
     }
-    
+
     // Sort by length (longest first)
     const sortedKeys = Object.keys(reverseMapping).sort((a, b) => b.length - a.length);
-    
+
     for (const ipa of sortedKeys) {
       const alphabet = reverseMapping[ipa];
       result = result.replace(new RegExp(ipa, 'g'), alphabet);
     }
-    
+
     return result;
   };
 
@@ -281,14 +339,14 @@ export default function LexiconManager() {
         navigate('/dashboard');
         return;
       }
-      
+
       // Check ownership
       if (langData.user_id !== user?.userId) {
         toast.error('You do not have permission to access this language');
         navigate('/dashboard');
         return;
       }
-      
+
       setLanguage(langData);
 
       // Initialize validator
@@ -353,34 +411,37 @@ export default function LexiconManager() {
 
     try {
       // Check for duplicate words before creating
-      const existingWord = words.find(w => 
-        w.word.toLowerCase() === data.word.toLowerCase() || 
-        w.ipa === data.ipa
+      const existingWord = words.find(
+        (w) => w.word.toLowerCase() === data.word.toLowerCase() || w.ipa === data.ipa
       );
-      
+
       if (existingWord && !editingWord) {
         toast.error(`Word "${data.word}" or IPA "${data.ipa}" already exists in your lexicon`);
         return;
       }
-      
+
       // Check for duplicate translations
-      const duplicateTranslation = words.find(w => 
-        w.translations.some(t => 
-          data.translations.some(dt => 
-            t.language_code === dt.language_code && 
-            t.meaning.toLowerCase() === dt.meaning.toLowerCase()
+      const duplicateTranslation = words.find((w) =>
+        w.translations.some((t) =>
+          data.translations.some(
+            (dt) =>
+              t.language_code === dt.language_code &&
+              t.meaning.toLowerCase() === dt.meaning.toLowerCase()
           )
         )
       );
-      
+
       if (duplicateTranslation && !editingWord) {
-        const conflictingTranslation = data.translations.find(dt => 
-          duplicateTranslation.translations.some(t => 
-            t.language_code === dt.language_code && 
-            t.meaning.toLowerCase() === dt.meaning.toLowerCase()
+        const conflictingTranslation = data.translations.find((dt) =>
+          duplicateTranslation.translations.some(
+            (t) =>
+              t.language_code === dt.language_code &&
+              t.meaning.toLowerCase() === dt.meaning.toLowerCase()
           )
         );
-        toast.error(`Translation "${conflictingTranslation?.meaning}" already exists for word "${duplicateTranslation.word}"`);
+        toast.error(
+          `Translation "${conflictingTranslation?.meaning}" already exists for word "${duplicateTranslation.word}"`
+        );
         return;
       }
 
@@ -394,11 +455,13 @@ export default function LexiconManager() {
           pos: data.pos,
           is_root: data.is_root,
           translations: data.translations,
-          etymology: data.parent_word_id ? {
-            parent_word_id: data.parent_word_id,
-            derivation_type: data.derivation_type,
-            derivation_notes: data.derivation_notes,
-          } : undefined,
+          etymology: data.parent_word_id
+            ? {
+                parent_word_id: data.parent_word_id,
+                derivation_type: data.derivation_type,
+                derivation_notes: data.derivation_notes,
+              }
+            : undefined,
           violations: validation.violations,
         });
 
@@ -411,11 +474,13 @@ export default function LexiconManager() {
           pos: data.pos,
           is_root: data.is_root,
           translations: data.translations,
-          etymology: data.parent_word_id ? {
-            parent_word_id: data.parent_word_id,
-            derivation_type: data.derivation_type,
-            derivation_notes: data.derivation_notes,
-          } : undefined,
+          etymology: data.parent_word_id
+            ? {
+                parent_word_id: data.parent_word_id,
+                derivation_type: data.derivation_type,
+                derivation_notes: data.derivation_notes,
+              }
+            : undefined,
           violations: validation.violations,
         });
 
@@ -498,16 +563,12 @@ export default function LexiconManager() {
       word.ipa,
       word.pos.join('; '),
       word.is_root ? 'Yes' : 'No',
-      word.translations
-        .map((t) => `${t.language_code}: ${t.meaning}`)
-        .join(' | '),
+      word.translations.map((t) => `${t.language_code}: ${t.meaning}`).join(' | '),
     ]);
 
     const csvContent = [
       headers.join(','),
-      ...rows.map((row) =>
-        row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(',')
-      ),
+      ...rows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(',')),
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -542,13 +603,13 @@ export default function LexiconManager() {
     const words: ImportWord[] = [];
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(',').map((v) => v.trim().replace(/^"|"$/g, ''));
-      
+
       if (values[wordIndex] && values[ipaIndex]) {
         const posValue = posIndex !== -1 ? values[posIndex] : 'noun';
         const pos = posValue.includes(';') ? posValue.split(';').map((p) => p.trim()) : [posValue];
-        
+
         const isRoot = rootIndex !== -1 ? values[rootIndex].toLowerCase() === 'yes' : false;
-        
+
         let translations: Array<{ language_code: string; meaning: string }> = [];
         if (translationIndex !== -1 && values[translationIndex]) {
           const transStr = values[translationIndex];
@@ -658,14 +719,18 @@ export default function LexiconManager() {
     // Validate phoneme inventory before attempting generation
     const consonantCount = language.phonemes?.consonants?.length || 0;
     const vowelCount = language.phonemes?.vowels?.length || 0;
-    
+
     if (consonantCount === 0 || vowelCount === 0) {
-      toast.error('Your language needs at least one consonant and one vowel to generate words. Please set up your phoneme inventory first.');
+      toast.error(
+        'Your language needs at least one consonant and one vowel to generate words. Please set up your phoneme inventory first.'
+      );
       return;
     }
 
     // AI word generation is not available without Supabase Edge Functions
-    toast.error('AI word generation is not available. This feature requires Supabase Edge Functions which have been removed.');
+    toast.error(
+      'AI word generation is not available. This feature requires Supabase Edge Functions which have been removed.'
+    );
   };
 
   const handleSelectWord = (selectedWord: { word: string; ipa: string }) => {
@@ -677,10 +742,10 @@ export default function LexiconManager() {
     if (generatorMeaning) {
       form.setValue('translations', [{ language_code: 'en', meaning: generatorMeaning }]);
     }
-    
+
     setShowWordSelection(false);
     setIsDialogOpen(true);
-    
+
     toast.success('Word selected! Review and add to lexicon.');
   };
 
@@ -706,11 +771,11 @@ export default function LexiconManager() {
       <div className="absolute bottom-40 left-10 w-96 h-96 bg-[#A1FBFC]/30 rounded-full blur-3xl animate-float-delayed" />
       <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-[#F269BF]/20 rounded-full blur-3xl animate-pulse-slow" />
       <div className="absolute bottom-20 right-1/4 w-80 h-80 bg-[#F5B485]/25 rounded-full blur-3xl animate-float" />
-      
+
       <div className="relative container max-w-7xl mx-auto py-12 px-6">
         <div className="flex justify-between items-center mb-8">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={() => navigate(`/language/${id}`)}
             className="text-slate-600 hover:text-[#F269BF] hover:bg-[#DDBCEE]/20 rounded-full px-6"
           >
@@ -718,9 +783,9 @@ export default function LexiconManager() {
             Back to Language
           </Button>
           <div className="flex gap-3">
-            <Button 
-              variant="outline" 
-              onClick={handleImportClick} 
+            <Button
+              variant="outline"
+              onClick={handleImportClick}
               disabled={isImporting}
               className="border-2 border-[#DDBCEE] text-[#748BF6] hover:bg-[#DDBCEE]/20 hover:border-[#F269BF] rounded-full"
             >
@@ -745,7 +810,7 @@ export default function LexiconManager() {
             />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
+                <Button
                   variant="outline"
                   className="border-2 border-[#DDBCEE] text-[#748BF6] hover:bg-[#DDBCEE]/20 hover:border-[#F269BF] rounded-full"
                 >
@@ -754,11 +819,17 @@ export default function LexiconManager() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-white border-2 border-[#DDBCEE]/40 rounded-2xl">
-                <DropdownMenuItem onClick={handleExportJSON} className="text-slate-600 hover:text-[#748BF6] focus:bg-[#DDBCEE]/20 focus:text-[#748BF6] rounded-xl">
+                <DropdownMenuItem
+                  onClick={handleExportJSON}
+                  className="text-slate-600 hover:text-[#748BF6] focus:bg-[#DDBCEE]/20 focus:text-[#748BF6] rounded-xl"
+                >
                   <FileJson className="mr-2 h-4 w-4" />
                   Export as JSON
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportCSV} className="text-slate-600 hover:text-[#F269BF] focus:bg-[#DDBCEE]/20 focus:text-[#F269BF] rounded-xl">
+                <DropdownMenuItem
+                  onClick={handleExportCSV}
+                  className="text-slate-600 hover:text-[#F269BF] focus:bg-[#DDBCEE]/20 focus:text-[#F269BF] rounded-xl"
+                >
                   <FileSpreadsheet className="mr-2 h-4 w-4" />
                   Export as CSV
                 </DropdownMenuItem>
@@ -772,7 +843,9 @@ export default function LexiconManager() {
           <CardHeader className="relative border-b border-[#DDBCEE]/30">
             <div className="flex justify-between items-center">
               <div>
-                <CardTitle className="text-3xl font-bold text-slate-800">{language?.name} Lexicon ✨</CardTitle>
+                <CardTitle className="text-3xl font-bold text-slate-800">
+                  {language?.name} Lexicon ✨
+                </CardTitle>
                 <CardDescription className="text-slate-500">
                   {words.length} words in your dictionary
                   {filteredWords.length !== words.length && ` (${filteredWords.length} shown)`}
@@ -781,7 +854,7 @@ export default function LexiconManager() {
               <div className="flex gap-3">
                 <Dialog open={generatorDialogOpen} onOpenChange={setGeneratorDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button 
+                    <Button
                       variant="outline"
                       className="border-2 border-[#F269BF]/40 text-[#F269BF] hover:bg-[#F269BF]/10 hover:border-[#F269BF] rounded-full"
                     >
@@ -798,7 +871,9 @@ export default function LexiconManager() {
                     </DialogHeader>
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium text-slate-700">Meaning (Optional)</label>
+                        <label className="text-sm font-medium text-slate-700">
+                          Meaning (Optional)
+                        </label>
                         <Input
                           placeholder="e.g., water, fire, love"
                           className="bg-white border-2 border-[#DDBCEE]/40 focus:border-[#748BF6] text-slate-800 placeholder:text-slate-400 rounded-xl"
@@ -825,11 +900,7 @@ export default function LexiconManager() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <Button
-                        onClick={handleAIGenerate}
-                        disabled={isGenerating}
-                        className="w-full"
-                      >
+                      <Button onClick={handleAIGenerate} disabled={isGenerating} className="w-full">
                         {isGenerating ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -871,7 +942,9 @@ export default function LexiconManager() {
                     <DialogHeader>
                       <DialogTitle>{editingWord ? 'Edit Word' : 'Add New Word'}</DialogTitle>
                       <DialogDescription>
-                        {editingWord ? 'Update the word details below' : 'Add a new word to your lexicon'}
+                        {editingWord
+                          ? 'Update the word details below'
+                          : 'Add a new word to your lexicon'}
                       </DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
@@ -884,8 +957,8 @@ export default function LexiconManager() {
                               <FormItem className="flex-1">
                                 <FormLabel>Word (Alphabet)</FormLabel>
                                 <FormControl>
-                                  <Input 
-                                    placeholder="e.g., thalor" 
+                                  <Input
+                                    placeholder="e.g., thalor"
                                     {...field}
                                     onChange={(e) => {
                                       field.onChange(e);
@@ -909,8 +982,8 @@ export default function LexiconManager() {
                               <FormItem className="flex-1">
                                 <FormLabel>IPA Notation</FormLabel>
                                 <FormControl>
-                                  <Input 
-                                    placeholder="e.g., θalɔr" 
+                                  <Input
+                                    placeholder="e.g., θalɔr"
                                     {...field}
                                     onChange={(e) => {
                                       field.onChange(e);
@@ -921,7 +994,9 @@ export default function LexiconManager() {
                                   />
                                 </FormControl>
                                 <FormDescription className="text-xs">
-                                  Type IPA - alphabet will auto-fill. Use <code className="text-purple-600">/</code> to split syllables (e.g., θa/lɔr)
+                                  Type IPA - alphabet will auto-fill. Use{' '}
+                                  <code className="text-purple-600">/</code> to split syllables
+                                  (e.g., θa/lɔr)
                                 </FormDescription>
                                 <FormMessage />
                               </FormItem>
@@ -978,7 +1053,9 @@ export default function LexiconManager() {
                                             }}
                                           />
                                         </FormControl>
-                                        <FormLabel className="font-normal cursor-pointer">{pos}</FormLabel>
+                                        <FormLabel className="font-normal cursor-pointer">
+                                          {pos}
+                                        </FormLabel>
                                       </FormItem>
                                     )}
                                   />
@@ -997,7 +1074,9 @@ export default function LexiconManager() {
                               <FormControl>
                                 <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                               </FormControl>
-                              <FormLabel className="font-normal cursor-pointer">Mark as root word</FormLabel>
+                              <FormLabel className="font-normal cursor-pointer">
+                                Mark as root word
+                              </FormLabel>
                             </FormItem>
                           )}
                         />
@@ -1136,7 +1215,10 @@ export default function LexiconManager() {
                             size="sm"
                             onClick={() => {
                               const current = form.getValues('translations');
-                              form.setValue('translations', [...current, { language_code: 'en', meaning: '' }]);
+                              form.setValue('translations', [
+                                ...current,
+                                { language_code: 'en', meaning: '' },
+                              ]);
                             }}
                           >
                             <Plus className="mr-2 h-3 w-3" />
@@ -1210,7 +1292,9 @@ export default function LexiconManager() {
                   <Sparkles className="h-10 w-10 text-white" />
                 </div>
                 <p className="text-slate-500 text-lg font-medium">
-                  {words.length === 0 ? 'No words yet. Add your first word! ✨' : 'No words match your filters.'}
+                  {words.length === 0
+                    ? 'No words yet. Add your first word! ✨'
+                    : 'No words match your filters.'}
                 </p>
               </div>
             ) : (
@@ -1218,26 +1302,38 @@ export default function LexiconManager() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-b border-[#DDBCEE]/30 hover:bg-transparent">
-                      <TableHead className="text-[#748BF6] font-semibold text-sm uppercase tracking-wider">Word</TableHead>
-                      <TableHead className="text-[#F269BF] font-semibold text-sm uppercase tracking-wider">IPA</TableHead>
-                      <TableHead className="text-[#F5B485] font-semibold text-sm uppercase tracking-wider">POS</TableHead>
-                      <TableHead className="text-[#A1FBFC] font-semibold text-sm uppercase tracking-wider">Translations</TableHead>
-                      <TableHead className="text-slate-500 font-semibold text-sm uppercase tracking-wider text-right">Actions</TableHead>
+                      <TableHead className="text-[#748BF6] font-semibold text-sm uppercase tracking-wider">
+                        Word
+                      </TableHead>
+                      <TableHead className="text-[#F269BF] font-semibold text-sm uppercase tracking-wider">
+                        IPA
+                      </TableHead>
+                      <TableHead className="text-[#F5B485] font-semibold text-sm uppercase tracking-wider">
+                        POS
+                      </TableHead>
+                      <TableHead className="text-[#A1FBFC] font-semibold text-sm uppercase tracking-wider">
+                        Translations
+                      </TableHead>
+                      <TableHead className="text-slate-500 font-semibold text-sm uppercase tracking-wider text-right">
+                        Actions
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredWords.map((word, index) => {
                       const isEven = index % 2 === 0;
                       const rowBg = isEven ? 'bg-white/30' : 'bg-white/50';
-                      
+
                       return (
-                        <TableRow 
-                          key={word.id} 
+                        <TableRow
+                          key={word.id}
                           className={`border-b border-[#DDBCEE]/20 hover:bg-[#DDBCEE]/10 transition-colors duration-200 ${rowBg}`}
                         >
                           <TableCell className="font-bold py-4">
                             <div className="flex items-center gap-2">
-                              <span className="text-slate-800 text-lg">{formatWordForDisplay(word.word)}</span>
+                              <span className="text-slate-800 text-lg">
+                                {formatWordForDisplay(word.word)}
+                              </span>
                               {word.is_root && (
                                 <Badge className="bg-gradient-to-r from-[#A1FBFC] to-[#748BF6] text-white border-0 font-bold shadow-lg rounded-full">
                                   Root
@@ -1263,10 +1359,10 @@ export default function LexiconManager() {
                                   'bg-[#748BF6]/30 text-[#748BF6] border-[#748BF6]/50',
                                 ];
                                 const colorClass = colors[i % colors.length];
-                                
+
                                 return (
-                                  <Badge 
-                                    key={p} 
+                                  <Badge
+                                    key={p}
                                     className={`${colorClass} border-2 font-semibold rounded-full`}
                                   >
                                     {p}
@@ -1278,10 +1374,7 @@ export default function LexiconManager() {
                           <TableCell>
                             <div className="space-y-1.5">
                               {word.translations.map((t) => (
-                                <div 
-                                  key={t.id} 
-                                  className="flex items-center gap-2 text-sm"
-                                >
+                                <div key={t.id} className="flex items-center gap-2 text-sm">
                                   <Badge className="bg-gradient-to-r from-[#A1FBFC] to-[#748BF6] text-white border-0 text-xs font-bold shrink-0 rounded-full">
                                     {t.language_code.toUpperCase()}
                                   </Badge>
@@ -1301,17 +1394,17 @@ export default function LexiconManager() {
                               >
                                 <GitBranch className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => handleEdit(word)}
                                 className="bg-[#A1FBFC]/20 hover:bg-[#A1FBFC]/40 text-[#748BF6] hover:text-[#748BF6] border-2 border-[#A1FBFC]/40 h-9 w-9 rounded-xl"
                               >
                                 <Edit2 className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => setDeleteWordId(word.id)}
                                 className="bg-red-100 hover:bg-red-200 text-red-500 hover:text-red-600 border-2 border-red-200 h-9 w-9 rounded-xl"
                               >
@@ -1335,15 +1428,16 @@ export default function LexiconManager() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-slate-800">Delete Word?</AlertDialogTitle>
             <AlertDialogDescription className="text-slate-500">
-              This will permanently delete this word and all its translations. This action cannot be undone.
+              This will permanently delete this word and all its translations. This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="border-2 border-[#DDBCEE] text-slate-600 hover:bg-[#DDBCEE]/20 rounded-full">
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDelete} 
+            <AlertDialogAction
+              onClick={handleDelete}
               className="bg-red-500 text-white hover:bg-red-600 rounded-full"
             >
               Delete
@@ -1364,7 +1458,11 @@ export default function LexiconManager() {
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {generatedWords.map((word, index) => (
-                <Card key={index} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleSelectWord(word)}>
+                <Card
+                  key={index}
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => handleSelectWord(word)}
+                >
                   <CardContent className="p-4">
                     <div className="space-y-2">
                       <div className="flex justify-between items-start">

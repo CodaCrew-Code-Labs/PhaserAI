@@ -37,7 +37,7 @@ export const logger = {
    */
   error: (...args: unknown[]) => {
     console.error(...args);
-    
+
     // TODO: In production, send to error tracking service like Sentry
     // if (!isDev) {
     //   Sentry.captureException(args[0]);

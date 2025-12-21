@@ -61,7 +61,7 @@ export default function EtymologyTree() {
         navigate('/dashboard');
         return;
       }
-      
+
       if (langData.user_id !== user?.userId) {
         toast.error('You do not have permission to access this language');
         navigate('/dashboard');
@@ -123,24 +123,43 @@ export default function EtymologyTree() {
 
     return (
       <div key={node.id} className="space-y-2">
-        <Card className={`${isCurrentWord ? 'border-2 border-[#F269BF] shadow-lg shadow-[#F269BF]/20' : `border-2 ${color.border}/40`} ${level > 0 ? 'ml-8' : ''} rounded-2xl ${color.bg} backdrop-blur-sm`}>
+        <Card
+          className={`${
+            isCurrentWord
+              ? 'border-2 border-[#F269BF] shadow-lg shadow-[#F269BF]/20'
+              : `border-2 ${color.border}/40`
+          } ${level > 0 ? 'ml-8' : ''} rounded-2xl ${color.bg} backdrop-blur-sm`}
+        >
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CardTitle className="text-lg text-slate-800 font-bold">{node.word}</CardTitle>
                 <span className="text-[#748BF6] font-mono text-sm">[{node.ipa}]</span>
                 {node.is_root && (
-                  <Badge className="bg-gradient-to-r from-[#A1FBFC] to-[#748BF6] text-white border-0 font-bold rounded-full">Root</Badge>
+                  <Badge className="bg-gradient-to-r from-[#A1FBFC] to-[#748BF6] text-white border-0 font-bold rounded-full">
+                    Root
+                  </Badge>
                 )}
                 {isCurrentWord && (
-                  <Badge className="bg-gradient-to-r from-[#F269BF] to-[#F5B485] text-white border-0 font-bold rounded-full">Current</Badge>
+                  <Badge className="bg-gradient-to-r from-[#F269BF] to-[#F5B485] text-white border-0 font-bold rounded-full">
+                    Current
+                  </Badge>
                 )}
               </div>
               <div className="flex gap-1">
                 {node.pos.map((p, i) => {
-                  const posColors = ['bg-[#A1FBFC]/30 text-[#748BF6]', 'bg-[#DDBCEE]/30 text-[#F269BF]', 'bg-[#F5B485]/30 text-[#F269BF]'];
+                  const posColors = [
+                    'bg-[#A1FBFC]/30 text-[#748BF6]',
+                    'bg-[#DDBCEE]/30 text-[#F269BF]',
+                    'bg-[#F5B485]/30 text-[#F269BF]',
+                  ];
                   return (
-                    <Badge key={p} className={`${posColors[i % posColors.length]} border-0 text-xs font-semibold rounded-full`}>
+                    <Badge
+                      key={p}
+                      className={`${
+                        posColors[i % posColors.length]
+                      } border-0 text-xs font-semibold rounded-full`}
+                    >
                       {p}
                     </Badge>
                   );
@@ -160,12 +179,14 @@ export default function EtymologyTree() {
               <div className="text-sm text-slate-500">
                 {node.etymology.derivation_type && (
                   <div>
-                    <strong className="text-[#F269BF]">Derivation:</strong> {node.etymology.derivation_type}
+                    <strong className="text-[#F269BF]">Derivation:</strong>{' '}
+                    {node.etymology.derivation_type}
                   </div>
                 )}
                 {node.etymology.derivation_notes && (
                   <div className="mt-1">
-                    <strong className="text-[#F269BF]">Notes:</strong> {node.etymology.derivation_notes}
+                    <strong className="text-[#F269BF]">Notes:</strong>{' '}
+                    {node.etymology.derivation_notes}
                   </div>
                 )}
               </div>
@@ -212,7 +233,7 @@ export default function EtymologyTree() {
       <div className="absolute top-20 right-20 w-72 h-72 bg-[#DDBCEE]/40 rounded-full blur-3xl animate-float" />
       <div className="absolute bottom-40 left-10 w-96 h-96 bg-[#A1FBFC]/30 rounded-full blur-3xl animate-float-delayed" />
       <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-[#F269BF]/20 rounded-full blur-3xl animate-pulse-slow" />
-      
+
       {/* Decorative elements */}
       <Star className="absolute top-32 left-[15%] w-6 h-6 text-[#F5B485] animate-pulse fill-[#F5B485]" />
       <Star className="absolute bottom-32 right-[20%] w-4 h-4 text-[#F269BF] animate-pulse fill-[#F269BF] animation-delay-2000" />
@@ -220,8 +241,8 @@ export default function EtymologyTree() {
 
       <div className="relative container max-w-5xl mx-auto py-8 px-4">
         <div className="flex justify-between items-center mb-6">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             onClick={() => navigate(`/language/${id}/words`)}
             className="text-slate-600 hover:text-[#F269BF] hover:bg-[#DDBCEE]/20 rounded-full px-6"
           >
@@ -239,22 +260,26 @@ export default function EtymologyTree() {
               </div>
               <div>
                 <CardTitle className="text-2xl font-black text-slate-800">Etymology Tree</CardTitle>
-                <CardDescription className="text-slate-500">{languageName} - Word Derivations ✨</CardDescription>
+                <CardDescription className="text-slate-500">
+                  {languageName} - Word Derivations ✨
+                </CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="relative">
             {displayRoot ? (
-              <div className="space-y-4">
-                {renderNode(displayRoot)}
-              </div>
+              <div className="space-y-4">{renderNode(displayRoot)}</div>
             ) : (
               <div className="text-center py-12">
                 <div className="w-20 h-20 bg-gradient-to-br from-[#DDBCEE]/30 to-[#F269BF]/30 rounded-3xl flex items-center justify-center mx-auto mb-4">
                   <Sparkles className="h-10 w-10 text-[#F269BF]" />
                 </div>
-                <p className="text-slate-600 font-medium">No etymology information available for this word.</p>
-                <p className="text-sm mt-2 text-slate-500">Add derivation information in the word editor to build the etymology tree.</p>
+                <p className="text-slate-600 font-medium">
+                  No etymology information available for this word.
+                </p>
+                <p className="text-sm mt-2 text-slate-500">
+                  Add derivation information in the word editor to build the etymology tree.
+                </p>
               </div>
             )}
           </CardContent>

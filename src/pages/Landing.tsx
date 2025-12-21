@@ -12,7 +12,7 @@ export default function Landing() {
       <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-[#F269BF]/20 rounded-full blur-3xl animate-pulse-slow" />
       <div className="absolute bottom-20 right-1/4 w-80 h-80 bg-[#F5B485]/25 rounded-full blur-3xl animate-float" />
       <div className="absolute top-1/2 right-10 w-48 h-48 bg-[#748BF6]/30 rounded-full blur-2xl animate-float-delayed" />
-      
+
       {/* Decorative stars */}
       <Star className="absolute top-32 left-[15%] w-6 h-6 text-[#F5B485] animate-pulse fill-[#F5B485]" />
       <Star className="absolute top-48 right-[20%] w-4 h-4 text-[#F269BF] animate-pulse fill-[#F269BF] animation-delay-2000" />
@@ -32,12 +32,17 @@ export default function Landing() {
               <span className="text-2xl font-black bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] bg-clip-text text-transparent">
                 PhaserAI
               </span>
-              <p className="text-xs text-[#748BF6] font-semibold tracking-wide">From a Conlanger For Conlangers</p>
+              <p className="text-xs text-[#748BF6] font-semibold tracking-wide">
+                From a Conlanger For Conlangers
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Link to="/login">
-              <Button variant="ghost" className="text-[#748BF6] hover:text-[#F269BF] hover:bg-[#DDBCEE]/20 font-semibold rounded-full px-6 transition-all duration-300">
+              <Button
+                variant="ghost"
+                className="text-[#748BF6] hover:text-[#F269BF] hover:bg-[#DDBCEE]/20 font-semibold rounded-full px-6 transition-all duration-300"
+              >
                 Login
               </Button>
             </Link>
@@ -66,23 +71,32 @@ export default function Landing() {
             </span>
           </h1>
           <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-            PhaserAI empowers conlang creators with <span className="text-[#748BF6] font-bold">AI-powered collision detection</span>, 
-            <span className="text-[#F269BF] font-bold"> multi-language search</span>, 
-            and <span className="text-[#F5B485] font-bold">phonological validation</span>. Build consistent, authentic constructed languages.
+            PhaserAI empowers conlang creators with{' '}
+            <span className="text-[#748BF6] font-bold">AI-powered collision detection</span>,
+            <span className="text-[#F269BF] font-bold"> multi-language search</span>, and{' '}
+            <span className="text-[#F5B485] font-bold">phonological validation</span>. Build
+            consistent, authentic constructed languages.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
             <Link to="/signup">
-              <Button size="lg" className="bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] hover:opacity-90 text-white text-lg font-bold px-10 py-7 rounded-full shadow-xl shadow-[#F269BF]/40 hover:shadow-[#F269BF]/60 hover:scale-105 transition-all duration-300">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] hover:opacity-90 text-white text-lg font-bold px-10 py-7 rounded-full shadow-xl shadow-[#F269BF]/40 hover:shadow-[#F269BF]/60 hover:scale-105 transition-all duration-300"
+              >
                 Get Started Free
                 <Wand2 className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="border-2 border-[#DDBCEE] text-[#748BF6] hover:bg-[#DDBCEE]/20 hover:border-[#F269BF] text-lg font-bold px-10 py-7 rounded-full backdrop-blur-sm transition-all duration-300 hover:scale-105">
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-2 border-[#DDBCEE] text-[#748BF6] hover:bg-[#DDBCEE]/20 hover:border-[#F269BF] text-lg font-bold px-10 py-7 rounded-full backdrop-blur-sm transition-all duration-300 hover:scale-105"
+            >
               View Demo
               <Sparkles className="ml-2 h-5 w-5" />
             </Button>
           </div>
-          
+
           {/* Colorful badges */}
           <div className="flex flex-wrap items-center justify-center gap-4 pt-8">
             <div className="flex items-center gap-2 px-4 py-2 bg-[#A1FBFC]/30 rounded-full border border-[#A1FBFC]/50">
@@ -119,7 +133,9 @@ export default function Landing() {
               <div className="w-14 h-14 bg-gradient-to-br from-[#A1FBFC] to-[#748BF6] rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-[#A1FBFC]/40 group-hover:rotate-6 transition-transform duration-300">
                 <Brain className="h-7 w-7 text-white" />
               </div>
-              <CardTitle className="text-slate-800 text-xl font-bold">AI Collision Detection</CardTitle>
+              <CardTitle className="text-slate-800 text-xl font-bold">
+                AI Collision Detection
+              </CardTitle>
               <CardDescription className="text-slate-600 text-base">
                 Semantic similarity checking prevents duplicate meanings in your lexicon
               </CardDescription>
@@ -132,7 +148,9 @@ export default function Landing() {
               <div className="w-14 h-14 bg-gradient-to-br from-[#748BF6] to-[#DDBCEE] rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-[#748BF6]/40 group-hover:rotate-6 transition-transform duration-300">
                 <Zap className="h-7 w-7 text-white" />
               </div>
-              <CardTitle className="text-slate-800 text-xl font-bold">Phonological Validation</CardTitle>
+              <CardTitle className="text-slate-800 text-xl font-bold">
+                Phonological Validation
+              </CardTitle>
               <CardDescription className="text-slate-600 text-base">
                 Real-time validation ensures all words follow your phonotactic rules
               </CardDescription>
@@ -145,7 +163,9 @@ export default function Landing() {
               <div className="w-14 h-14 bg-gradient-to-br from-[#DDBCEE] to-[#F269BF] rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-[#DDBCEE]/40 group-hover:rotate-6 transition-transform duration-300">
                 <Languages className="h-7 w-7 text-white" />
               </div>
-              <CardTitle className="text-slate-800 text-xl font-bold">Multi-Language Search</CardTitle>
+              <CardTitle className="text-slate-800 text-xl font-bold">
+                Multi-Language Search
+              </CardTitle>
               <CardDescription className="text-slate-600 text-base">
                 Search across English, Arabic, Hindi and more with instant results
               </CardDescription>
@@ -211,11 +231,15 @@ export default function Landing() {
                 Ready to Phase Your Phonology?
               </h2>
               <p className="text-xl text-slate-600 leading-relaxed">
-                Join conlang creators building authentic, phonologically-valid languages with AI assistance
+                Join conlang creators building authentic, phonologically-valid languages with AI
+                assistance
               </p>
               <div className="pt-4">
                 <Link to="/signup">
-                  <Button size="lg" className="bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] hover:opacity-90 text-white font-black text-xl px-12 py-8 rounded-full shadow-xl shadow-[#F269BF]/50 hover:shadow-[#F269BF]/70 hover:scale-105 transition-all duration-300">
+                  <Button
+                    size="lg"
+                    className="bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] hover:opacity-90 text-white font-black text-xl px-12 py-8 rounded-full shadow-xl shadow-[#F269BF]/50 hover:shadow-[#F269BF]/70 hover:scale-105 transition-all duration-300"
+                  >
                     Start Building Free ✨
                   </Button>
                 </Link>
@@ -235,13 +259,30 @@ export default function Landing() {
               </div>
               <div>
                 <span className="text-slate-600 font-medium">© 2025 PhaserAI</span>
-                <p className="text-xs text-[#F269BF] font-semibold">From a Conlanger For Conlangers 💜</p>
+                <p className="text-xs text-[#F269BF] font-semibold">
+                  From a Conlanger For Conlangers 💜
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-6 text-slate-500">
-              <a href="#" className="hover:text-[#748BF6] transition-colors duration-300 font-medium">Privacy</a>
-              <a href="#" className="hover:text-[#F269BF] transition-colors duration-300 font-medium">Terms</a>
-              <a href="#" className="hover:text-[#F5B485] transition-colors duration-300 font-medium">Contact</a>
+              <a
+                href="#"
+                className="hover:text-[#748BF6] transition-colors duration-300 font-medium"
+              >
+                Privacy
+              </a>
+              <a
+                href="#"
+                className="hover:text-[#F269BF] transition-colors duration-300 font-medium"
+              >
+                Terms
+              </a>
+              <a
+                href="#"
+                className="hover:text-[#F5B485] transition-colors duration-300 font-medium"
+              >
+                Contact
+              </a>
             </div>
           </div>
         </div>
