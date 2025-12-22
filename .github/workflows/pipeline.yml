@@ -491,8 +491,9 @@ jobs:
           build-args: |
             VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL || 'https://dummy-url.supabase.co' }}
             VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy-key' }}
-          cache-from: type=gha,scope=prod-ecr
-          cache-to: type=gha,mode=max,scope=prod-ecr
+          no-cache: true
+          provenance: false
+          sbom: false
       
       - name: Scan Images for Vulnerabilities
         run: |
