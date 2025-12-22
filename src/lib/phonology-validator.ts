@@ -188,11 +188,7 @@ export class PhonologyValidator {
     if (pattern === requiredStructure) return true;
 
     // Check if pattern matches with optional elements
-    const regex = structure
-      .replace(/\(/g, '(')
-      .replace(/\)/g, ')?')
-      .replace(/C/g, 'C')
-      .replace(/V/g, 'V');
+    const regex = structure.replace(/\)/g, ')?');
 
     try {
       return new RegExp(`^${regex}$`).test(pattern);

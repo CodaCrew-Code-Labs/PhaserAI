@@ -24,27 +24,27 @@ export class EcrStack extends cdk.Stack {
       imageTagMutability: ecr.TagMutability.MUTABLE, // Allow tag updates
       lifecycleRules: [
         {
-          // Keep last 10 production images
+          // Keep last 10 phaserai-latest images
           rulePriority: 1,
-          description: 'Keep last 10 production images',
+          description: 'Keep last 10 phaserai-latest images',
           tagStatus: ecr.TagStatus.TAGGED,
-          tagPrefixList: ['latest', 'main', 'prod'],
+          tagPrefixList: ['phaserai-latest'],
           maxImageCount: 10,
         },
         {
-          // Keep development images for 7 days
+          // Keep phaserai branch images for 7 days
           rulePriority: 2,
-          description: 'Keep development images for 7 days',
+          description: 'Keep phaserai branch images for 7 days',
           tagStatus: ecr.TagStatus.TAGGED,
-          tagPrefixList: ['dev'],
+          tagPrefixList: ['phaserai-main', 'phaserai-master', 'phaserai-develop'],
           maxImageAge: cdk.Duration.days(7),
         },
         {
-          // Keep feature branch images for 3 days
+          // Keep phaserai commit hash images for 3 days
           rulePriority: 3,
-          description: 'Keep feature branch images for 3 days',
+          description: 'Keep phaserai commit hash images for 3 days',
           tagStatus: ecr.TagStatus.TAGGED,
-          tagPrefixList: ['feature', 'fix', 'hotfix'],
+          tagPrefixList: ['phaserai-'],
           maxImageAge: cdk.Duration.days(3),
         },
         {

@@ -474,22 +474,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
       
-      - name: Extract Metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ steps.ecr-info.outputs.repository-uri }}
-          tags: |
-            type=raw,value=phaserai-{{branch}}
-            type=raw,value=phaserai-{{sha}}
-            type=raw,value=phaserai-latest,enable={{is_default_branch}}
-          labels: |
-            org.opencontainers.image.title=PhaserAI
-            org.opencontainers.image.description=Conlang creation and management application
-            org.opencontainers.image.vendor=PhaserAI
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.revision=${{ github.sha }}
-      
       - name: Build and Push Production Image to ECR
         uses: docker/build-push-action@v5
         with:
@@ -497,8 +481,13 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.ecr-info.outputs.repository-uri }}:phaserai-${{ github.ref_name }}
+          labels: |
+            org.opencontainers.image.title=PhaserAI
+            org.opencontainers.image.description=Conlang creation and management application
+            org.opencontainers.image.vendor=PhaserAI
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
           build-args: |
             VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL || 'https://dummy-url.supabase.co' }}
             VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy-key' }}
@@ -509,14 +498,15 @@ jobs:
         run: |
           echo "🔍 Scanning images for vulnerabilities..."
           
-          # Get repository name
+          # Get repository name and tag
           REPO_NAME="${{ steps.ecr-info.outputs.repository-name }}"
+          IMAGE_TAG="phaserai-${{ github.ref_name }}"
           
-          # Scan the latest image
-          echo "Scanning phaserai-latest image..."
+          # Scan the image
+          echo "Scanning $IMAGE_TAG image..."
           aws ecr start-image-scan \
             --repository-name "$REPO_NAME" \
-            --image-id imageTag=phaserai-latest \
+            --image-id imageTag="$IMAGE_TAG" \
             --region ${{ env.AWS_REGION }} || echo "Scan already in progress or failed"
           
           echo "✅ Vulnerability scan initiated"
@@ -528,13 +518,8 @@ jobs:
           echo "=============================="
           echo "Registry: ${{ steps.login-ecr.outputs.registry }}"
           echo "Repository: ${{ steps.ecr-info.outputs.repository-uri }}"
-          echo ""
-          echo "Image Tags:"
-          echo "${{ steps.meta.outputs.tags }}" | while read -r tag; do
-            echo "  - $tag"
-          done
-          echo ""
-          echo "Image Digest: ${{ steps.meta.outputs.digest }}"
+          echo "Tag: phaserai-${{ github.ref_name }}"
+          echo "Full Image URI: ${{ steps.ecr-info.outputs.repository-uri }}:phaserai-${{ github.ref_name }}"
           echo ""
           echo "🔗 View in AWS Console:"
           echo "https://console.aws.amazon.com/ecr/repositories/private/${{ secrets.AWS_ACCOUNT_ID }}/${{ steps.ecr-info.outputs.repository-name }}?region=${{ env.AWS_REGION }}"
