@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api-client';
 import { useAuthStore } from '@/lib/auth-store';
@@ -45,9 +45,9 @@ export default function Dashboard() {
 
     setEmailVerified(user.emailVerified);
     loadLanguages();
-  }, [user, navigate]);
+  }, [user, navigate, loadLanguages]);
 
-  const loadLanguages = async () => {
+  const loadLanguages = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -59,7 +59,7 @@ export default function Dashboard() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
 
   const handleSignOut = async () => {
     try {
