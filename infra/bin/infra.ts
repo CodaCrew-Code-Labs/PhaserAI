@@ -8,6 +8,7 @@ import { BastionStack } from '../lib/bastion-stack';
 import { MigrationStack } from '../lib/migration-stack';
 import { BackupStack } from '../lib/backup-stack';
 import { EcrStack } from '../lib/ecr-stack';
+import { Ec2WebStack } from '../lib/ec2-web-stack';
 
 const app = new cdk.App();
 
@@ -91,6 +92,24 @@ const productionApiStack = new ProductionApiStack(app, `${appName}-prod-api-${en
 // API depends on database and migrations
 productionApiStack.addDependency(productionDatabaseStack);
 productionApiStack.addDependency(migrationStack);
+
+// Create EC2 web hosting stack
+const ec2WebStack = new Ec2WebStack(app, `${appName}-web-${environment}`, {
+  appName,
+  environment,
+  vpc: productionDatabaseStack.vpc,
+  ecrRepository: ecrStack.repository,
+  databaseSecretArn: productionDatabaseStack.databaseSecret.secretArn,
+  databaseEndpoint: productionDatabaseStack.database.instanceEndpoint.hostname,
+  databaseSecurityGroupId: productionDatabaseStack.databaseSecurityGroup.securityGroupId,
+  env,
+});
+
+// Web stack depends on database and ECR
+ec2WebStack.addDependency(productionDatabaseStack);
+ec2WebStack.addDependency(ecrStack);
+// Temporarily removed migration dependency due to psycopg2 layer issue
+// ec2WebStack.addDependency(migrationStack);
 
 // Create auth stack
 new CognitoAuthStack(app, `${appName}-auth-${environment}`, {

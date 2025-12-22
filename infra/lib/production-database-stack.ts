@@ -171,4 +171,13 @@ export class ProductionDatabaseStack extends cdk.Stack {
       description: 'Connection string format (replace username:password with actual credentials)',
     });
   }
+
+  // Method to allow access from external security groups
+  public allowAccessFrom(securityGroup: ec2.SecurityGroup, description: string): void {
+    this.databaseSecurityGroup.addIngressRule(
+      securityGroup,
+      ec2.Port.tcp(5432),
+      description
+    );
+  }
 }

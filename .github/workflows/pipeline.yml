@@ -489,8 +489,19 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
           build-args: |
-            VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL || 'https://dummy-url.supabase.co' }}
-            VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy-key' }}
+            VITE_API_URL=${{ secrets.VITE_API_URL || 'https://en7b8h3pbb.execute-api.us-east-1.amazonaws.com/prod' }}
+            VITE_DATABASE_HOST=${{ secrets.VITE_DATABASE_HOST || 'phaserai-prod-database-dev-databaseb269d8bb-jhwrdjqtab4c.con6sqoaytuo.us-east-1.rds.amazonaws.com' }}
+            VITE_DATABASE_PORT=${{ secrets.VITE_DATABASE_PORT || '5432' }}
+            VITE_DATABASE_NAME=${{ secrets.VITE_DATABASE_NAME || 'phaserai_dev' }}
+            VITE_DATABASE_USER=${{ secrets.VITE_DATABASE_USER || 'phaserai_admin' }}
+            VITE_DATABASE_PASSWORD=${{ secrets.VITE_DATABASE_PASSWORD }}
+            VITE_COGNITO_USER_POOL_ID=${{ secrets.VITE_COGNITO_USER_POOL_ID || 'us-east-1_uie09oGE2' }}
+            VITE_COGNITO_CLIENT_ID=${{ secrets.VITE_COGNITO_CLIENT_ID || 'd2ue1ugmoslq9mbfa0na89btr' }}
+            VITE_AWS_REGION=${{ secrets.VITE_AWS_REGION || 'us-east-1' }}
+            VITE_COGNITO_DOMAIN=${{ secrets.VITE_COGNITO_DOMAIN || 'phaserai-dev-auth.auth.us-east-1.amazoncognito.com' }}
+            VITE_COGNITO_REDIRECT_SIGNIN=${{ secrets.VITE_COGNITO_REDIRECT_SIGNIN || 'http://phaserai-dev-alb-1162347917.us-east-1.elb.amazonaws.com/dashboard' }}
+            VITE_COGNITO_REDIRECT_SIGNOUT=${{ secrets.VITE_COGNITO_REDIRECT_SIGNOUT || 'http://phaserai-dev-alb-1162347917.us-east-1.elb.amazonaws.com/' }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
           no-cache: true
           provenance: false
           sbom: false
