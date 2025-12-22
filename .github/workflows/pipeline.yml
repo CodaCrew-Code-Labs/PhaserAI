@@ -295,39 +295,24 @@ jobs:
       - name: Build Docker Images
         if: matrix.component == 'docker'
         run: |
-          echo "🐳 Building Docker images..."
+          echo "🐳 Building Docker image for testing..."
           
-          # Build development image
-          echo "Building development image..."
-          docker build -f Dockerfile.dev -t phaserai-dev:latest \
-            --build-arg VITE_SUPABASE_URL=https://dummy-dev-url.supabase.co \
-            --build-arg VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy-dev-key \
-            .
-          
-          # Build production image
+          # Build production image for testing
           echo "Building production image..."
-          docker build -f Dockerfile -t phaserai:latest \
-            --build-arg VITE_SUPABASE_URL=https://dummy-prod-url.supabase.co \
-            --build-arg VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy-prod-key \
+          docker build -f Dockerfile -t phaserai:test \
+            --build-arg VITE_SUPABASE_URL=https://dummy-url.supabase.co \
+            --build-arg VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy-key \
             .
           
-          echo "✅ Docker images built successfully"
+          echo "✅ Docker image built successfully"
           
           # Show image information
           echo "📊 Docker image analysis:"
           docker images | grep phaserai
           
-          # Test development image
-          echo "🧪 Testing development image..."
-          docker run --rm -d --name phaserai-dev-test -p 5173:5173 phaserai-dev:latest &
-          sleep 15
-          echo "Development container logs:"
-          docker logs phaserai-dev-test | head -10
-          docker stop phaserai-dev-test || true
-          
           # Test production image
           echo "🧪 Testing production image..."
-          docker run --rm -d --name phaserai-prod-test -p 8080:80 phaserai:latest &
+          docker run --rm -d --name phaserai-test -p 8080:80 phaserai:test &
           sleep 10
           
           # Health check
@@ -335,17 +320,16 @@ jobs:
             echo "✅ Production image health check passed"
           else
             echo "⚠️ Production image health check failed (may be expected in CI)"
-            docker logs phaserai-prod-test | head -10
+            docker logs phaserai-test | head -10
           fi
           
-          docker stop phaserai-prod-test || true
+          docker stop phaserai-test || true
           
-          # Save images for potential upload
-          echo "💾 Saving Docker images..."
-          docker save phaserai:latest | gzip > phaserai-latest.tar.gz
-          docker save phaserai-dev:latest | gzip > phaserai-dev-latest.tar.gz
+          # Save image for potential upload (optional)
+          echo "💾 Saving Docker image..."
+          docker save phaserai:test | gzip > phaserai-test.tar.gz
           
-          echo "📦 Image sizes:"
+          echo "📦 Image size:"
           ls -lh *.tar.gz
       
       # Lambda Layers Build
@@ -496,10 +480,9 @@ jobs:
         with:
           images: ${{ steps.ecr-info.outputs.repository-uri }}
           tags: |
-            type=ref,event=branch
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value={{date 'YYYYMMDD-HHmmss'}}
+            type=raw,value=phaserai-{{branch}}
+            type=raw,value=phaserai-{{sha}}
+            type=raw,value=phaserai-latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.title=PhaserAI
             org.opencontainers.image.description=Conlang creation and management application
@@ -512,7 +495,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -522,23 +505,6 @@ jobs:
           cache-from: type=gha,scope=prod-ecr
           cache-to: type=gha,mode=max,scope=prod-ecr
       
-      - name: Build and Push Development Image to ECR
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile.dev
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ${{ steps.ecr-info.outputs.repository-uri }}:dev
-            ${{ steps.ecr-info.outputs.repository-uri }}:dev-${{ github.sha }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL || 'https://dummy-url.supabase.co' }}
-            VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy-key' }}
-          cache-from: type=gha,scope=dev-ecr
-          cache-to: type=gha,mode=max,scope=dev-ecr
-      
       - name: Scan Images for Vulnerabilities
         run: |
           echo "🔍 Scanning images for vulnerabilities..."
@@ -546,38 +512,27 @@ jobs:
           # Get repository name
           REPO_NAME="${{ steps.ecr-info.outputs.repository-name }}"
           
-          # Scan production image
-          echo "Scanning production image..."
+          # Scan the latest image
+          echo "Scanning phaserai-latest image..."
           aws ecr start-image-scan \
             --repository-name "$REPO_NAME" \
-            --image-id imageTag=latest \
+            --image-id imageTag=phaserai-latest \
             --region ${{ env.AWS_REGION }} || echo "Scan already in progress or failed"
           
-          # Scan development image
-          echo "Scanning development image..."
-          aws ecr start-image-scan \
-            --repository-name "$REPO_NAME" \
-            --image-id imageTag=dev \
-            --region ${{ env.AWS_REGION }} || echo "Scan already in progress or failed"
-          
-          echo "✅ Vulnerability scans initiated"
+          echo "✅ Vulnerability scan initiated"
           echo "💡 View scan results in AWS ECR console"
       
       - name: Output Image Information
         run: |
-          echo "📦 Docker Images Pushed to ECR"
+          echo "📦 Docker Image Pushed to ECR"
           echo "=============================="
           echo "Registry: ${{ steps.login-ecr.outputs.registry }}"
           echo "Repository: ${{ steps.ecr-info.outputs.repository-uri }}"
           echo ""
-          echo "Production Images:"
+          echo "Image Tags:"
           echo "${{ steps.meta.outputs.tags }}" | while read -r tag; do
             echo "  - $tag"
           done
-          echo ""
-          echo "Development Images:"
-          echo "  - ${{ steps.ecr-info.outputs.repository-uri }}:dev"
-          echo "  - ${{ steps.ecr-info.outputs.repository-uri }}:dev-${{ github.sha }}"
           echo ""
           echo "Image Digest: ${{ steps.meta.outputs.digest }}"
           echo ""
