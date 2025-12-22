@@ -84,7 +84,7 @@ export class EcrStack extends cdk.Stack {
     // Grant ECR permissions to the GitHub Actions role
     this.repository.grantPullPush(githubOidcRole);
 
-    // Add additional ECR permissions for image scanning
+    // Add additional ECR permissions for image scanning and repository access
     githubOidcRole.addToPolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
@@ -92,8 +92,10 @@ export class EcrStack extends cdk.Stack {
           'ecr:StartImageScan',
           'ecr:DescribeImageScanFindings',
           'ecr:GetAuthorizationToken',
+          'ecr:DescribeRepositories',
+          'ecr:ListImages',
         ],
-        resources: ['*'], // GetAuthorizationToken requires * resource
+        resources: ['*'], // GetAuthorizationToken and DescribeRepositories require * resource
       })
     );
 
