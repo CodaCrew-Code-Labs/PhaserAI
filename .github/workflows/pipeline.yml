@@ -755,6 +755,43 @@ jobs:
           retention-days: 30
 
   # ============================================================================
+  # JOB 6: AUTO-DEPLOY TO EC2 (After ECR Push)
+  # ============================================================================
+  auto-deploy-ec2:
+    name: Auto-Deploy to EC2
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: push-to-ecr
+    if: github.ref == 'refs/heads/master' && needs.push-to-ecr.result == 'success'
+    
+    permissions:
+      id-token: write   # Required for OIDC token requests
+      contents: read    # Required for actions/checkout
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActions-EC2-Deploy
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Update EC2 Application
+        run: |
+          echo "🚀 Auto-deploying to EC2 instances..."
+          
+          # Make script executable
+          chmod +x ./scripts/update-web-app.sh
+          
+          # Run update with the new image tag
+          ./scripts/update-web-app.sh dev phaserai-${{ github.ref_name }}
+          
+          echo "✅ EC2 auto-deployment completed!"
+
+  # ============================================================================
   # JOB 6: DEPLOYMENT (Future - ECR & CDK Deploy)
   # ============================================================================
   deploy:

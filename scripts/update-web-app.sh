@@ -97,6 +97,7 @@ print_step "Getting current instance information..."
 
 INSTANCES=$(aws autoscaling describe-auto-scaling-groups \
     --auto-scaling-group-names "$ASG_NAME" \
+    --region "$AWS_REGION" \
     --query 'AutoScalingGroups[0].Instances[?LifecycleState==`InService`].InstanceId' \
     --output text)
 
@@ -116,6 +117,7 @@ for INSTANCE_ID in $INSTANCES; do
     
     # Send update command via Systems Manager
     COMMAND_ID=$(aws ssm send-command \
+        --region "$AWS_REGION" \
         --instance-ids "$INSTANCE_ID" \
         --document-name "AWS-RunShellScript" \
         --parameters "commands=[
@@ -135,6 +137,7 @@ for INSTANCE_ID in $INSTANCES; do
     
     while true; do
         STATUS=$(aws ssm get-command-invocation \
+            --region "$AWS_REGION" \
             --command-id "$COMMAND_ID" \
             --instance-id "$INSTANCE_ID" \
             --query 'Status' \
@@ -148,6 +151,7 @@ for INSTANCE_ID in $INSTANCES; do
             
             # Show error details
             aws ssm get-command-invocation \
+                --region "$AWS_REGION" \
                 --command-id "$COMMAND_ID" \
                 --instance-id "$INSTANCE_ID" \
                 --query 'StandardErrorContent' \
@@ -192,13 +196,15 @@ done
 # Step 6: Check target group health
 print_step "Checking target group health..."
 
+# Find target group by looking for one that contains "phaser" in the name
 TARGET_GROUP_ARN=$(aws elbv2 describe-target-groups \
-    --names "${APP_NAME}-${ENVIRONMENT}-tg" \
-    --query 'TargetGroups[0].TargetGroupArn' \
+    --region "$AWS_REGION" \
+    --query 'TargetGroups[?contains(TargetGroupName, `phaser`)].TargetGroupArn' \
     --output text 2>/dev/null || echo "")
 
 if [ -n "$TARGET_GROUP_ARN" ]; then
     HEALTHY_TARGETS=$(aws elbv2 describe-target-health \
+        --region "$AWS_REGION" \
         --target-group-arn "$TARGET_GROUP_ARN" \
         --query 'TargetHealthDescriptions[?TargetHealth.State==`healthy`]' \
         --output json | jq length)
@@ -223,12 +229,12 @@ print_info "📊 Instances updated: $INSTANCE_COUNT"
 print_info ""
 print_info "🔍 Monitoring commands:"
 print_info "  # Check application logs"
-print_info "  aws logs tail /aws/ec2/${APP_NAME}-${ENVIRONMENT} --follow"
+print_info "  aws logs tail /aws/ec2/${APP_NAME}-${ENVIRONMENT} --region $AWS_REGION --follow"
 print_info ""
 print_info "  # Check target group health"
-print_info "  aws elbv2 describe-target-health --target-group-arn $TARGET_GROUP_ARN"
+print_info "  aws elbv2 describe-target-health --region $AWS_REGION --target-group-arn $TARGET_GROUP_ARN"
 print_info ""
 print_info "  # Check Auto Scaling Group status"
-print_info "  aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names $ASG_NAME"
+print_info "  aws autoscaling describe-auto-scaling-groups --region $AWS_REGION --auto-scaling-group-names $ASG_NAME"
 
 print_success "Update completed successfully!"
