@@ -359,9 +359,9 @@ export default function LexiconManager() {
 
       const wordsData = await api.getWords(id);
 
-      const formattedWords = (wordsData || []).map((word: Word) => ({
+      const formattedWords = (wordsData || []).map((word: any) => ({
         ...word,
-        translations: word.translations || [],
+        translations: word.translations || word.app_8b514_translations || [],
         violations: word.violations || [],
       }));
 
@@ -501,6 +501,13 @@ export default function LexiconManager() {
 
   const handleEdit = (word: Word) => {
     setEditingWord(word);
+    const translations = word.translations && word.translations.length > 0 
+      ? word.translations.map((t) => ({
+          language_code: t.language_code,
+          meaning: t.meaning,
+        }))
+      : [{ language_code: 'en', meaning: '' }];
+    
     form.reset({
       word: word.word,
       ipa: word.ipa,
@@ -509,10 +516,7 @@ export default function LexiconManager() {
       parent_word_id: undefined,
       derivation_type: undefined,
       derivation_notes: '',
-      translations: word.translations.map((t) => ({
-        language_code: t.language_code,
-        meaning: t.meaning,
-      })),
+      translations,
     });
     setIsDialogOpen(true);
   };
