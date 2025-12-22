@@ -158,35 +158,8 @@ export class Ec2WebStack extends cdk.Stack {
       // Pull and run the Docker image
       `docker pull ${ecrRepository.repositoryUri}:phaserai-master`,
       
-
-
-      '[Unit]',
-      'Description=PhaserAI Web Application',
-      'After=docker.service',
-      'Requires=docker.service',
-      '',
-      '[Service]',
-      'Type=simple',
-      'Restart=always',
-      'RestartSec=5',
-      'User=root',
-      `Environment=DATABASE_URL=postgresql://$DB_USERNAME:$DB_PASSWORD@${databaseEndpoint}:5432/phaserai`,
-      'Environment=NODE_ENV=production',
-      'Environment=PORT=80',
-      `ExecStartPre=-/usr/bin/docker stop phaserai-app`,
-      `ExecStartPre=-/usr/bin/docker rm phaserai-app`,
-      `ExecStartPre=/usr/bin/docker pull ${ecrRepository.repositoryUri}:phaserai-master`,
-      `ExecStart=/usr/bin/docker run --name phaserai-app -p 80:80 --env DATABASE_URL --env NODE_ENV --env PORT ${ecrRepository.repositoryUri}:phaserai-master`,
-      `ExecStop=/usr/bin/docker stop phaserai-app`,
-      '',
-      '[Install]',
-      'WantedBy=multi-user.target',
-      'EOF',
-      
-      // Enable and start the service
-
-
-
+      // Run container directly (simpler than systemd)
+      `docker run -d --name phaserai-container --restart unless-stopped -p 80:80 ${ecrRepository.repositoryUri}:phaserai-master`,
       
       // Set up log forwarding to CloudWatch
       'cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << EOF',
