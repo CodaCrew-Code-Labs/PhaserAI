@@ -37,6 +37,7 @@ export class BackupStack extends cdk.Stack {
       bucketName: `${appName}-${environment}-database-backups`,
       versioned: true,
       encryption: s3.BucketEncryption.S3_MANAGED,
+      enforceSSL: true,
       lifecycleRules: [
         {
           id: 'backup-lifecycle',
@@ -52,12 +53,12 @@ export class BackupStack extends cdk.Stack {
             },
             {
               storageClass: s3.StorageClass.DEEP_ARCHIVE,
-              transitionAfter: cdk.Duration.days(365),
+              transitionAfter: cdk.Duration.days(180),
             },
           ],
           expiration: environment === 'prod' 
             ? cdk.Duration.days(2555) // 7 years for production
-            : cdk.Duration.days(90),   // 3 months for dev/staging
+            : cdk.Duration.days(365),   // 1 year for dev/staging
         },
       ],
       publicReadAccess: false,
@@ -77,7 +78,7 @@ export class BackupStack extends cdk.Stack {
           new iam.PolicyStatement({
             effect: iam.Effect.DENY,
             principals: [new iam.AnyPrincipal()],
-            actions: ['backup:DeleteBackupVault', 'backup:DeleteBackupPlan', 'backup:DeleteRecoveryPoint'],
+            actions: ['backup:DeleteRecoveryPoint'],
             resources: ['*'],
             conditions: {
               StringNotEquals: {
@@ -366,10 +367,17 @@ Timestamp: {datetime.utcnow().isoformat()}
       actions: [
         'backup:ListRecoveryPointsByBackupVault',
         'backup:DescribeRecoveryPoint',
+      ],
+      resources: [this.backupVault.backupVaultArn, `${this.backupVault.backupVaultArn}/*`],
+    }));
+
+    this.verificationFunction.addToRolePolicy(new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: [
         'rds:DescribeDBInstances',
         'rds:DescribeDBSnapshots',
       ],
-      resources: ['*'],
+      resources: [database.instanceArn],
     }));
 
     this.alertTopic.grantPublish(this.verificationFunction);

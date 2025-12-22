@@ -68,7 +68,7 @@ print_step() {
 # Script configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LAYER_DIR="$SCRIPT_DIR"
-PYTHON_VERSION="3.7"  # Amazon Linux 2 uses Python 3.7
+PYTHON_VERSION="3.11"  # Match Lambda runtime
 PSYCOPG2_VERSION="2.9.9"
 DOCKER_IMAGE="amazonlinux:2"
 
@@ -78,7 +78,7 @@ print_info "====================================================================
 print_info "Layer directory: $LAYER_DIR"
 print_info "Python version: $PYTHON_VERSION (Amazon Linux 2)"
 print_info "psycopg2 version: $PSYCOPG2_VERSION"
-print_info "Target architecture: ARM64 (aarch64)"
+print_info "Target architecture: x86_64 (amd64)"
 
 # Step 1: Clean previous build
 print_step "Cleaning previous build artifacts..."
@@ -115,7 +115,7 @@ if command -v docker &> /dev/null; then
     
     # Docker build command with detailed logging
     print_info "Pulling Amazon Linux 2 image and installing dependencies..."
-    docker run --rm -v "$LAYER_DIR":/var/task "$DOCKER_IMAGE" bash -c "
+    docker run --rm --platform linux/amd64 -v "$LAYER_DIR":/var/task "$DOCKER_IMAGE" bash -c "
         set -e
         echo '[Docker] Updating package manager...'
         yum update -y
@@ -126,8 +126,11 @@ if command -v docker &> /dev/null; then
         echo '[Docker] Verifying Python version...'
         python3 --version
         
-        echo '[Docker] Installing psycopg2-binary...'
-        pip3 install psycopg2-binary==$PSYCOPG2_VERSION -t /var/task/python/ --no-cache-dir
+        echo '[Docker] Upgrading pip...'
+        pip3 install --upgrade pip
+        
+        echo '[Docker] Installing psycopg2-binary (latest compatible version)...'
+        pip3 install psycopg2-binary -t /var/task/python/ --no-cache-dir
         
         echo '[Docker] Cleaning up Python cache files...'
         find /var/task/python -name '*.pyc' -delete
@@ -137,13 +140,16 @@ if command -v docker &> /dev/null; then
         find /var/task/python -name '*.so' -exec chmod +x {} \;
         
         echo '[Docker] Final cleanup verification...'
-        PYC_COUNT=$(find /var/task/python -name '*.pyc' | wc -l)
-        CACHE_COUNT=$(find /var/task/python -name '__pycache__' -type d | wc -l)
-        echo "[Docker] Remaining .pyc files: $PYC_COUNT"
-        echo "[Docker] Remaining __pycache__ dirs: $CACHE_COUNT"
+        PYC_COUNT=\$(find /var/task/python -name '*.pyc' | wc -l)
+        CACHE_COUNT=\$(find /var/task/python -name '__pycache__' -type d | wc -l)
+        echo \"[Docker] Remaining .pyc files: \$PYC_COUNT\"
+        echo \"[Docker] Remaining __pycache__ dirs: \$CACHE_COUNT\"
         
         echo '[Docker] Listing installed packages...'
         ls -la /var/task/python/
+        
+        echo '[Docker] Checking installed version...'
+        pip3 show psycopg2-binary | grep Version || echo 'Version info not available'
         
         echo '[Docker] Build completed successfully'
     "

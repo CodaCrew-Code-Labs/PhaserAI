@@ -40,7 +40,7 @@ def handler(event, context):
         return lambda_response(500, {'error': str(e)})
 
 def get_words(query_params: dict):
-    """Get all words with optional filtering"""
+    """Get all words with optional filtering, including translations"""
     language_id = query_params.get('languageId')
     user_id = query_params.get('userId')
     
@@ -52,19 +52,75 @@ def get_words(query_params: dict):
         if not verify_result:
             return lambda_response(404, {'error': 'Language not found or access denied'})
         
-        query = "SELECT * FROM app_8b514_words WHERE language_id = %s ORDER BY created_at DESC"
+        query = """
+            SELECT 
+                w.*,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id', t.id,
+                            'language_code', t.language_code,
+                            'meaning', t.meaning,
+                            'created_at', t.created_at
+                        ) ORDER BY t.created_at
+                    ) FILTER (WHERE t.id IS NOT NULL),
+                    '[]'::json
+                ) as app_8b514_translations
+            FROM app_8b514_words w
+            LEFT JOIN app_8b514_translations t ON w.id = t.word_id
+            WHERE w.language_id = %s
+            GROUP BY w.id
+            ORDER BY w.created_at DESC
+        """
         result = execute_query(query, (language_id,))
     elif language_id:
-        query = "SELECT * FROM app_8b514_words WHERE language_id = %s ORDER BY created_at DESC"
+        query = """
+            SELECT 
+                w.*,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id', t.id,
+                            'language_code', t.language_code,
+                            'meaning', t.meaning,
+                            'created_at', t.created_at
+                        ) ORDER BY t.created_at
+                    ) FILTER (WHERE t.id IS NOT NULL),
+                    '[]'::json
+                ) as app_8b514_translations
+            FROM app_8b514_words w
+            LEFT JOIN app_8b514_translations t ON w.id = t.word_id
+            WHERE w.language_id = %s
+            GROUP BY w.id
+            ORDER BY w.created_at DESC
+        """
         result = execute_query(query, (language_id,))
     else:
-        query = "SELECT * FROM app_8b514_words ORDER BY created_at DESC"
+        query = """
+            SELECT 
+                w.*,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id', t.id,
+                            'language_code', t.language_code,
+                            'meaning', t.meaning,
+                            'created_at', t.created_at
+                        ) ORDER BY t.created_at
+                    ) FILTER (WHERE t.id IS NOT NULL),
+                    '[]'::json
+                ) as app_8b514_translations
+            FROM app_8b514_words w
+            LEFT JOIN app_8b514_translations t ON w.id = t.word_id
+            GROUP BY w.id
+            ORDER BY w.created_at DESC
+        """
         result = execute_query(query)
     
     return lambda_response(200, result)
 
 def get_language_words(language_id: str, user_id: str = None):
-    """Get words for a specific language"""
+    """Get words for a specific language with translations"""
     if not language_id:
         return lambda_response(400, {'error': 'Language ID is required'})
     
@@ -76,13 +132,33 @@ def get_language_words(language_id: str, user_id: str = None):
         if not verify_result:
             return lambda_response(404, {'error': 'Language not found or access denied'})
     
-    query = "SELECT * FROM app_8b514_words WHERE language_id = %s ORDER BY created_at DESC"
+    # Get words with their translations
+    query = """
+        SELECT 
+            w.*,
+            COALESCE(
+                json_agg(
+                    json_build_object(
+                        'id', t.id,
+                        'language_code', t.language_code,
+                        'meaning', t.meaning,
+                        'created_at', t.created_at
+                    ) ORDER BY t.created_at
+                ) FILTER (WHERE t.id IS NOT NULL),
+                '[]'::json
+            ) as app_8b514_translations
+        FROM app_8b514_words w
+        LEFT JOIN app_8b514_translations t ON w.id = t.word_id
+        WHERE w.language_id = %s
+        GROUP BY w.id
+        ORDER BY w.created_at DESC
+    """
     result = execute_query(query, (language_id,))
     
     return lambda_response(200, result)
 
 def get_word(word_id: str, user_id: str = None):
-    """Get a specific word"""
+    """Get a specific word with translations"""
     if not word_id:
         return lambda_response(400, {'error': 'Word ID is required'})
     
@@ -101,7 +177,14 @@ def get_word(word_id: str, user_id: str = None):
     if not result:
         return lambda_response(404, {'error': 'Word not found'})
     
-    return lambda_response(200, result[0])
+    word = result[0]
+    
+    # Get translations for this word
+    translations_query = "SELECT * FROM app_8b514_translations WHERE word_id = %s ORDER BY created_at"
+    translations = execute_query(translations_query, (word_id,))
+    word['translations'] = translations or []
+    
+    return lambda_response(200, word)
 
 def create_word(word_data: dict):
     """Create a new word"""
@@ -141,6 +224,22 @@ def create_word(word_data: dict):
             embedding
         )
     )
+    
+    word_id = result[0]['id']
+    
+    # Handle translations if provided
+    if 'translations' in word_data:
+        for translation in word_data['translations']:
+            if translation.get('meaning'):  # Only insert non-empty translations
+                insert_translation_query = """
+                    INSERT INTO app_8b514_translations (word_id, language_code, meaning)
+                    VALUES (%s, %s, %s)
+                """
+                execute_query(insert_translation_query, (
+                    word_id,
+                    translation.get('language_code', 'en'),
+                    translation['meaning']
+                ))
     
     return lambda_response(201, result[0])
 
@@ -200,6 +299,25 @@ def update_word(word_id: str, word_data: dict):
     
     if not result:
         return lambda_response(404, {'error': 'Word not found'})
+    
+    # Handle translations update if provided
+    if 'translations' in word_data:
+        # Delete existing translations
+        delete_translations_query = "DELETE FROM app_8b514_translations WHERE word_id = %s"
+        execute_query(delete_translations_query, (word_id,))
+        
+        # Insert new translations
+        for translation in word_data['translations']:
+            if translation.get('meaning'):  # Only insert non-empty translations
+                insert_translation_query = """
+                    INSERT INTO app_8b514_translations (word_id, language_code, meaning)
+                    VALUES (%s, %s, %s)
+                """
+                execute_query(insert_translation_query, (
+                    word_id,
+                    translation.get('language_code', 'en'),
+                    translation['meaning']
+                ))
     
     return lambda_response(200, result[0])
 

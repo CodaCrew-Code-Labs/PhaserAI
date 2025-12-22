@@ -25,6 +25,7 @@ export class MigrationStack extends cdk.Stack {
     const psycopg2Layer = new lambda.LayerVersion(this, 'Psycopg2Layer', {
       code: lambda.Code.fromAsset('lambda-layers/psycopg2'),
       compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
+      compatibleArchitectures: [lambda.Architecture.X86_64], // Explicitly set architecture
       description: 'PostgreSQL driver (psycopg2) for Lambda',
     });
 
@@ -33,6 +34,7 @@ export class MigrationStack extends cdk.Stack {
       runtime: lambda.Runtime.PYTHON_3_11,
       handler: 'migration.handler',
       code: lambda.Code.fromAsset('lambda-functions'),
+      architecture: lambda.Architecture.X86_64, // Explicitly set architecture
       timeout: cdk.Duration.minutes(15), // Migrations can take time
       memorySize: 512,
       layers: [psycopg2Layer],
