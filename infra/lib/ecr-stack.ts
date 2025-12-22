@@ -110,7 +110,24 @@ export class EcrStack extends cdk.Stack {
         ],
         resources: [
           `arn:aws:cloudformation:${this.region}:${this.account}:stack/${appName}-ecr-${environment}/*`,
+          `arn:aws:cloudformation:${this.region}:${this.account}:stack/${appName}-web-${environment}/*`,
         ],
+      })
+    );
+
+    // Add EC2 and Auto Scaling permissions for web app updates
+    githubOidcRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'autoscaling:DescribeAutoScalingGroups',
+          'ec2:DescribeInstances',
+          'ssm:SendCommand',
+          'ssm:GetCommandInvocation',
+          'elbv2:DescribeTargetGroups',
+          'elbv2:DescribeTargetHealth',
+        ],
+        resources: ['*'],
       })
     );
 
