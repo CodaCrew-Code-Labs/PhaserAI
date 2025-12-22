@@ -197,6 +197,8 @@ jobs:
             --build-arg VITE_COGNITO_CLIENT_ID="${{ secrets.VITE_COGNITO_CLIENT_ID }}" \
             --build-arg VITE_AWS_REGION="${{ secrets.VITE_AWS_REGION }}" \
             --build-arg VITE_COGNITO_DOMAIN="${{ secrets.VITE_COGNITO_DOMAIN }}" \
+            --build-arg VITE_COGNITO_REDIRECT_SIGNIN="${{ secrets.VITE_COGNITO_REDIRECT_SIGNIN }}" \
+            --build-arg VITE_COGNITO_REDIRECT_SIGNOUT="${{ secrets.VITE_COGNITO_REDIRECT_SIGNOUT }}" \
             .
           
           # Test image

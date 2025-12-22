@@ -39,7 +39,7 @@ print_step() { echo -e "${CYAN}[STEP]${NC} $1"; }
 
 # Configuration
 ENVIRONMENT=${1:-dev}
-IMAGE_TAG=${2:-phaserai-master}  # Changed default from 'latest' to 'phaserai-master'
+IMAGE_TAG=${2:-phaserai-master}
 APP_NAME="phaserai"
 WEB_STACK_NAME="${APP_NAME}-web-${ENVIRONMENT}"
 
@@ -66,11 +66,9 @@ print_info "ECR Repository: $ECR_REPO_URI"
 # Step 1: Verify image exists
 print_step "Verifying Docker image exists..."
 
-# First check if image exists with describe-images (more reliable)
 if aws ecr describe-images --repository-name "$APP_NAME" --image-ids imageTag="$IMAGE_TAG" --region "$AWS_REGION" &> /dev/null; then
     print_success "✅ Image $IMAGE_TAG exists in ECR"
 else
-    # Fallback to list-images and check if tag exists in the list
     AVAILABLE_TAGS=$(aws ecr list-images --repository-name "$APP_NAME" --region "$AWS_REGION" --query 'imageIds[*].imageTag' --output text 2>/dev/null || echo "")
     
     if echo "$AVAILABLE_TAGS" | grep -q "$IMAGE_TAG"; then
@@ -130,9 +128,11 @@ for INSTANCE_ID in $INSTANCES; do
         --document-name "AWS-RunShellScript" \
         --parameters "commands=[
             'echo \"Updating application to $IMAGE_TAG...\"',
-            'sudo systemctl stop phaserai.service',
-            'sudo docker pull $ECR_REPO_URI:$IMAGE_TAG',
-            'sudo systemctl start phaserai.service',
+            'aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO_URI',
+            'docker pull $ECR_REPO_URI:$IMAGE_TAG',
+            'docker stop phaserai-container || true',
+            'docker rm phaserai-container || true',
+            'docker run -d --name phaserai-container --restart unless-stopped -p 80:80 -e OPENAI_API_KEY=\"\$OPENAI_API_KEY\" -e DATABASE_HOST=\"\$DATABASE_HOST\" -e DATABASE_PASSWORD=\"\$DATABASE_PASSWORD\" $ECR_REPO_URI:$IMAGE_TAG',
             'echo \"Update completed for $IMAGE_TAG\"'
         ]" \
         --query 'Command.CommandId' \
@@ -204,7 +204,6 @@ done
 # Step 6: Check target group health
 print_step "Checking target group health..."
 
-# Find target group by looking for one that contains "phaser" in the name
 TARGET_GROUP_ARN=$(aws elbv2 describe-target-groups \
     --region "$AWS_REGION" \
     --query 'TargetGroups[?contains(TargetGroupName, `phaser`)].TargetGroupArn' \
@@ -236,13 +235,13 @@ print_info "🌐 Application URL: http://$ALB_DNS"
 print_info "📊 Instances updated: $INSTANCE_COUNT"
 print_info ""
 print_info "🔍 Monitoring commands:"
+print_info "  # Check Docker container status"
+print_info "  docker ps | grep phaserai-container"
+print_info ""
 print_info "  # Check application logs"
-print_info "  aws logs tail /aws/ec2/${APP_NAME}-${ENVIRONMENT} --region $AWS_REGION --follow"
+print_info "  docker logs phaserai-container -f"
 print_info ""
 print_info "  # Check target group health"
 print_info "  aws elbv2 describe-target-health --region $AWS_REGION --target-group-arn $TARGET_GROUP_ARN"
-print_info ""
-print_info "  # Check Auto Scaling Group status"
-print_info "  aws autoscaling describe-auto-scaling-groups --region $AWS_REGION --auto-scaling-group-names $ASG_NAME"
 
 print_success "Update completed successfully!"

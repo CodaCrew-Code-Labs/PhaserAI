@@ -158,8 +158,8 @@ export class Ec2WebStack extends cdk.Stack {
       // Pull and run the Docker image
       `docker pull ${ecrRepository.repositoryUri}:phaserai-master`,
       
-      // Create systemd service for the application
-      'cat > /etc/systemd/system/phaserai.service << EOF',
+
+
       '[Unit]',
       'Description=PhaserAI Web Application',
       'After=docker.service',
@@ -184,9 +184,9 @@ export class Ec2WebStack extends cdk.Stack {
       'EOF',
       
       // Enable and start the service
-      'systemctl daemon-reload',
-      'systemctl enable phaserai.service',
-      'systemctl start phaserai.service',
+
+
+
       
       // Set up log forwarding to CloudWatch
       'cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << EOF',
