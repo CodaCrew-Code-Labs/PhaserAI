@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api-client';
 import { useAuthStore } from '@/lib/auth-store';
@@ -44,22 +44,21 @@ export default function Dashboard() {
     }
 
     setEmailVerified(user.emailVerified);
+    
+    const loadLanguages = async () => {
+      try {
+        const data = await api.getLanguages(user.userId);
+        setLanguages(data || []);
+      } catch (error) {
+        console.error('Error loading languages:', error);
+        toast.error('Failed to load languages');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     loadLanguages();
-  }, [user, navigate, loadLanguages]);
-
-  const loadLanguages = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      const data = await api.getLanguages(user.userId);
-      setLanguages(data || []);
-    } catch (error) {
-      console.error('Error loading languages:', error);
-      toast.error('Failed to load languages');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
+  }, [user, navigate]);
 
   const handleSignOut = async () => {
     try {
