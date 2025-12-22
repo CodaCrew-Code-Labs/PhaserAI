@@ -97,6 +97,21 @@ export class EcrStack extends cdk.Stack {
       })
     );
 
+    // Add CloudFormation permissions to read stack outputs
+    githubOidcRole.addToPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'cloudformation:DescribeStacks',
+          'cloudformation:ListStackResources',
+          'cloudformation:GetTemplate',
+        ],
+        resources: [
+          `arn:aws:cloudformation:${this.region}:${this.account}:stack/${appName}-ecr-${environment}/*`,
+        ],
+      })
+    );
+
     // Create IAM user as fallback for environments that don't support OIDC
     const githubActionsUser = new iam.User(this, 'GitHubActionsUser', {
       userName: `${appName}-github-actions-ecr-${environment}`,

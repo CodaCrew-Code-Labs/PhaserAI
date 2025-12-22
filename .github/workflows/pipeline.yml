@@ -443,27 +443,27 @@ jobs:
       - name: Get ECR Repository URI
         id: ecr-info
         run: |
-          echo "🔍 Getting ECR repository information from CDK..."
+          echo "🔍 Getting ECR repository information..."
           
-          # Get repository URI from CDK outputs
-          REPO_URI=$(aws cloudformation describe-stacks \
-            --stack-name phaserai-ecr-dev \
-            --query 'Stacks[0].Outputs[?OutputKey==`RepositoryUri`].OutputValue' \
-            --output text \
-            --region ${{ env.AWS_REGION }})
+          # Construct repository URI directly (more reliable than CloudFormation)
+          AWS_ACCOUNT_ID="${{ secrets.AWS_ACCOUNT_ID }}"
+          AWS_REGION="${{ env.AWS_REGION }}"
+          REPO_NAME="phaserai"
           
-          if [ -z "$REPO_URI" ]; then
-            echo "❌ ECR repository not found. Please deploy the ECR stack first:"
-            echo "   cd infra && cdk deploy phaserai-ecr-dev"
+          REPO_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}"
+          
+          echo "✅ ECR repository URI: $REPO_URI"
+          echo "repository-uri=$REPO_URI" >> $GITHUB_OUTPUT
+          echo "repository-name=$REPO_NAME" >> $GITHUB_OUTPUT
+          
+          # Verify repository exists
+          if aws ecr describe-repositories --repository-names "$REPO_NAME" --region "$AWS_REGION" &> /dev/null; then
+            echo "✅ ECR repository exists and is accessible"
+          else
+            echo "❌ ECR repository not found or not accessible"
+            echo "💡 Ensure the ECR stack is deployed: ./scripts/deploy-ecr.sh"
             exit 1
           fi
-          
-          echo "✅ Found ECR repository: $REPO_URI"
-          echo "repository-uri=$REPO_URI" >> $GITHUB_OUTPUT
-          
-          # Extract repository name
-          REPO_NAME=$(echo $REPO_URI | cut -d'/' -f2)
-          echo "repository-name=$REPO_NAME" >> $GITHUB_OUTPUT
       
       - name: Login to Amazon ECR
         id: login-ecr
