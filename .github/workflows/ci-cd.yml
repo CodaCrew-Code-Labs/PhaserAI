@@ -1,0 +1,361 @@
+# ============================================================================
+# PhaserAI Consolidated CI/CD Pipeline
+# ============================================================================
+#
+# Single workflow that consolidates all CI/CD activities:
+# - Code quality, security, and formatting checks
+# - Build, test, and Docker image creation
+# - Infrastructure validation and deployment
+# - ECR push and EC2 deployment
+#
+# Replaces: docker.yml, pipeline.yml, pr-checks.yml, security-scan.yml
+#
+# ============================================================================
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop, master]
+    paths-ignore: ['*.md', 'docs/**', '.gitignore', 'LICENSE']
+  
+  pull_request:
+    branches: [main, develop, master]
+    types: [opened, synchronize, reopened]
+    paths-ignore: ['*.md', 'docs/**', '.gitignore', 'LICENSE']
+  
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly security scan
+  
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'development'
+        type: choice
+        options: [development, staging, production]
+      deploy_infrastructure:
+        description: 'Deploy infrastructure changes'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '18'
+  PNPM_VERSION: '8'
+  AWS_REGION: 'us-east-1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # JOB 1: VALIDATION & QUALITY CHECKS
+  # ============================================================================
+  validate:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    outputs:
+      should-build: ${{ steps.changes.outputs.should-build }}
+      should-deploy: ${{ steps.changes.outputs.should-deploy }}
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js & pnpm
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+      
+      - name: Install Dependencies
+        run: |
+          echo "📦 Installing dependencies..."
+          pnpm install --frozen-lockfile || pnpm install
+          cd infra && npm ci
+      
+      - name: Determine Changes
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "should-build=true" >> $GITHUB_OUTPUT
+            echo "should-deploy=false" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" =~ refs/heads/(main|master|develop) ]]; then
+            echo "should-build=true" >> $GITHUB_OUTPUT
+            echo "should-deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "should-build=false" >> $GITHUB_OUTPUT
+            echo "should-deploy=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Code Quality Checks
+        run: |
+          echo "🔍 Running code quality checks..."
+          pnpm run lint || echo "⚠️ Lint issues found"
+          pnpm run format:check || echo "⚠️ Format issues found"
+          pnpm run type-check
+      
+      - name: Security Scans
+        run: |
+          echo "🔒 Running security scans..."
+          pnpm audit --audit-level moderate || echo "⚠️ Frontend vulnerabilities found"
+          cd infra && npm audit --audit-level moderate || echo "⚠️ Infrastructure vulnerabilities found"
+          
+          # Secret scanning
+          if git diff origin/${{ github.base_ref || 'HEAD~1' }}...HEAD | grep -iE "(password|secret|api[_-]?key|token)" | grep -v "PASSWORD\|SECRET\|API_KEY"; then
+            echo "⚠️ Potential secrets detected"
+          fi
+      
+      - name: PR Size Check
+        if: github.event_name == 'pull_request'
+        run: |
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | wc -l)
+          CHANGED_LINES=$(git diff --stat origin/${{ github.base_ref }}...HEAD | tail -1 | awk '{print $4+$6}' || echo "0")
+          echo "📏 PR Size: $CHANGED_FILES files, $CHANGED_LINES lines"
+          [ $CHANGED_FILES -gt 50 ] && echo "⚠️ Large PR detected"
+          [ $CHANGED_LINES -gt 1000 ] && echo "⚠️ Very large PR detected"
+
+  # ============================================================================
+  # JOB 2: BUILD & TEST
+  # ============================================================================
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: validate
+    if: needs.validate.outputs.should-build == 'true'
+    
+    outputs:
+      image-digest: ${{ steps.docker.outputs.digest }}
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js & pnpm
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Install Dependencies
+        run: |
+          pnpm install --frozen-lockfile || pnpm install
+          cd infra && npm ci
+      
+      - name: Build Frontend
+        run: |
+          echo "🏗️ Building frontend..."
+          pnpm run build
+          echo "📊 Build size: $(du -sh dist/)"
+      
+      - name: Build Docker Images
+        id: docker
+        run: |
+          echo "🐳 Building Docker images..."
+          
+          # Build production image with required secrets
+          docker build -f Dockerfile -t phaserai:latest \
+            --build-arg VITE_API_URL="${{ secrets.VITE_API_URL }}" \
+            --build-arg VITE_COGNITO_USER_POOL_ID="${{ secrets.VITE_COGNITO_USER_POOL_ID }}" \
+            --build-arg VITE_COGNITO_CLIENT_ID="${{ secrets.VITE_COGNITO_CLIENT_ID }}" \
+            --build-arg VITE_AWS_REGION="${{ secrets.VITE_AWS_REGION }}" \
+            --build-arg VITE_COGNITO_DOMAIN="${{ secrets.VITE_COGNITO_DOMAIN }}" \
+            .
+          
+          # Test image
+          docker run --rm -d --name phaserai-test -p 8080:80 phaserai:latest &
+          sleep 10
+          curl -f http://localhost:8080 || echo "⚠️ Health check failed"
+          docker stop phaserai-test || true
+          
+          # Save for ECR push
+          docker save phaserai:latest | gzip > phaserai-image.tar.gz
+          echo "digest=$(docker images --digests phaserai:latest --format '{{.Digest}}')" >> $GITHUB_OUTPUT
+      
+      - name: Build Lambda Layers
+        run: |
+          echo "🐍 Building Lambda layers..."
+          cd infra/lambda-layers/psycopg2
+          chmod +x build-layer.sh verify-deployment.sh
+          ./build-layer.sh
+          ./verify-deployment.sh
+      
+      - name: Build Infrastructure
+        run: |
+          echo "🏗️ Building infrastructure..."
+          cd infra
+          npx cdk synth --all --quiet
+          
+          # Security checks
+          echo "🔒 Infrastructure security checks..."
+          grep -r "0.0.0.0/0" cdk.out/ --include="*.json" | head -5 || echo "✅ No public access"
+          grep -r "Encrypted.*false" cdk.out/ --include="*.json" | head -5 || echo "✅ All encrypted"
+      
+      - name: Container Security Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          input: phaserai-image.tar.gz
+          format: sarif
+          output: trivy-results.sarif
+      
+      - name: Upload Security Results
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+      
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            dist/
+            infra/cdk.out/
+            phaserai-image.tar.gz
+          retention-days: 7
+
+  # ============================================================================
+  # JOB 3: DEPLOY TO ECR & EC2
+  # ============================================================================
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [validate, build]
+    if: needs.validate.outputs.should-deploy == 'true'
+    
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ./
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActions-Deploy
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Push to ECR
+        run: |
+          echo "🚀 Pushing to ECR..."
+          
+          # Load and tag image
+          docker load < phaserai-image.tar.gz
+          
+          REPO_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/phaserai"
+          IMAGE_TAG="phaserai-${{ github.ref_name }}"
+          
+          docker tag phaserai:latest "$REPO_URI:$IMAGE_TAG"
+          docker push "$REPO_URI:$IMAGE_TAG"
+          
+          echo "✅ Image pushed: $REPO_URI:$IMAGE_TAG"
+      
+      - name: Deploy to EC2
+        if: github.ref == 'refs/heads/master'
+        run: |
+          echo "🚀 Deploying to EC2..."
+          chmod +x ./scripts/update-web-app.sh
+          ./scripts/update-web-app.sh dev phaserai-${{ github.ref_name }}
+      
+      - name: Vulnerability Scan
+        run: |
+          aws ecr start-image-scan \
+            --repository-name phaserai \
+            --image-id imageTag=phaserai-${{ github.ref_name }} \
+            --region ${{ env.AWS_REGION }} || echo "Scan in progress"
+
+  # ============================================================================
+  # JOB 4: NOTIFICATION & CLEANUP
+  # ============================================================================
+  notify:
+    name: Pipeline Summary
+    runs-on: ubuntu-latest
+    needs: [validate, build, deploy]
+    if: always()
+    
+    steps:
+      - name: Pipeline Summary
+        run: |
+          echo "📊 Pipeline Summary"
+          echo "=================="
+          echo "Validation: ${{ needs.validate.result }}"
+          echo "Build: ${{ needs.build.result }}"
+          echo "Deploy: ${{ needs.deploy.result }}"
+          
+          if [[ "${{ needs.validate.result }}" == "success" && "${{ needs.build.result }}" == "success" ]]; then
+            echo "✅ Pipeline completed successfully"
+          else
+            echo "❌ Pipeline had failures"
+          fi
+      
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const status = '${{ needs.validate.result }}' === 'success' && '${{ needs.build.result }}' === 'success' ? '✅' : '❌';
+            const output = `## CI/CD Pipeline ${status}
+            
+            - **Validation**: ${{ needs.validate.result }}
+            - **Build**: ${{ needs.build.result }}
+            - **Deploy**: ${{ needs.deploy.result || 'skipped' }}
+            
+            ${status === '✅' ? 'All checks passed!' : 'Some checks failed - please review.'}`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });

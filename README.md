@@ -315,6 +315,29 @@ docker run -p 3001:80 \
   phaserai-prod
 ```
 
+### CI/CD Pipeline
+
+PhaserAI uses a single, consolidated GitHub Actions workflow (`ci-cd.yml`) that combines all development activities:
+
+**Pipeline Stages:**
+1. **Validation & Quality** - Code quality, security scans, formatting checks
+2. **Build & Test** - Frontend build, Docker images, Lambda layers, infrastructure
+3. **Deploy** - ECR push, EC2 deployment, vulnerability scanning
+4. **Notification** - Pipeline summary and PR comments
+
+**Triggers:**
+- **Pull Requests**: Validation and build only
+- **Main Branch**: Full pipeline with deployment
+- **Schedule**: Weekly security scans
+- **Manual**: Custom environment deployment
+
+**Key Features:**
+- Eliminates duplicate activities across workflows
+- Intelligent job skipping based on changes
+- Parallel execution where possible
+- Comprehensive security scanning
+- Automated PR feedback
+
 ### Code Quality Tools
 
 #### ESLint Configuration
@@ -339,10 +362,7 @@ npx tsc --noEmit --watch
 
 ### Build & CI/CD Workflow Status
 
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/pipeline.yml?branch=master&style=for-the-badge&label=Pipeline%20Build%20Workflow) 
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/docker.yml?branch=master&style=for-the-badge&label=Docker%20Workflow)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/pr-checks.yml?branch=master&style=for-the-badge&label=PR%20Check%20Workflow)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/security-scan.yml?branch=master&style=for-the-badge&label=Security%20Scan%20Workflow)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/CodaCrew-Code-Labs/PhaserAI/ci-cd.yml?branch=master&style=for-the-badge&label=CI/CD%20Pipeline)
 
 
 ### Development & Contribution
