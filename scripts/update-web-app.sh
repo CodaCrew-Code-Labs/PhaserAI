@@ -66,13 +66,21 @@ print_info "ECR Repository: $ECR_REPO_URI"
 # Step 1: Verify image exists
 print_step "Verifying Docker image exists..."
 
+# First check if image exists with describe-images (more reliable)
 if aws ecr describe-images --repository-name "$APP_NAME" --image-ids imageTag="$IMAGE_TAG" --region "$AWS_REGION" &> /dev/null; then
     print_success "✅ Image $IMAGE_TAG exists in ECR"
 else
-    print_error "❌ Image $IMAGE_TAG not found in ECR"
-    print_info "Available images:"
-    aws ecr list-images --repository-name "$APP_NAME" --region "$AWS_REGION" --query 'imageIds[*].imageTag' --output table
-    exit 1
+    # Fallback to list-images and check if tag exists in the list
+    AVAILABLE_TAGS=$(aws ecr list-images --repository-name "$APP_NAME" --region "$AWS_REGION" --query 'imageIds[*].imageTag' --output text 2>/dev/null || echo "")
+    
+    if echo "$AVAILABLE_TAGS" | grep -q "$IMAGE_TAG"; then
+        print_success "✅ Image $IMAGE_TAG found in ECR (via list-images)"
+    else
+        print_error "❌ Image $IMAGE_TAG not found in ECR"
+        print_info "Available images:"
+        aws ecr list-images --repository-name "$APP_NAME" --region "$AWS_REGION" --query 'imageIds[*].imageTag' --output table
+        exit 1
+    fi
 fi
 
 # Step 2: Get Auto Scaling Group name
