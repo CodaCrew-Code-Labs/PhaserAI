@@ -228,10 +228,21 @@ jobs:
           
           echo "✅ Lambda package created: $(ls -lh lambda-package.zip)"
       
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHubActions-CDK
+          aws-region: ${{ env.AWS_REGION }}
+      
       - name: Deploy CDK Stacks
         run: |
           echo "🚀 Deploying CDK stacks..."
           cd infra
+          
+          # Set CDK environment variables
+          export CDK_DEFAULT_ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+          export CDK_DEFAULT_REGION=${{ env.AWS_REGION }}
           
           # Build TypeScript and deploy all stacks
           npm run build
