@@ -211,13 +211,33 @@ jobs:
           docker save phaserai:latest | gzip > phaserai-image.tar.gz
           echo "digest=$(docker images --digests phaserai:latest --format '{{.Digest}}')" >> $GITHUB_OUTPUT
       
-      - name: Build Lambda Layers
+      - name: Build Lambda Functions
         run: |
-          echo "🐍 Building Lambda layers..."
-          cd infra/lambda-layers/psycopg2
-          chmod +x build-layer.sh verify-deployment.sh
-          ./build-layer.sh
-          ./verify-deployment.sh
+          echo "🔧 Building Lambda functions..."
+          cd infra/lambda-functions-nodejs
+          
+          # Remove existing zip if present
+          rm -f lambda-package.zip
+          
+          # Install dependencies and build TypeScript
+          npm ci
+          npm run build
+          
+          # Create zip package with compiled JS and node_modules
+          zip -r lambda-package.zip dist/ node_modules/ package.json -x "node_modules/.cache/*" "*.test.js"
+          
+          echo "✅ Lambda package created: $(ls -lh lambda-package.zip)"
+      
+      - name: Deploy CDK Stacks
+        run: |
+          echo "🚀 Deploying CDK stacks..."
+          cd infra
+          
+          # Build TypeScript and deploy all stacks
+          npm run build
+          npx cdk deploy --all --require-approval never
+          
+          echo "✅ All CDK stacks deployed"
       
       - name: Build Infrastructure
         run: |

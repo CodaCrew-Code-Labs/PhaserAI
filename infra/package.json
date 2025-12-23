@@ -5,13 +5,14 @@
     "infra": "bin/infra.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run build:lambda",
+    "build:lambda": "cd lambda-functions-nodejs && npm install --production && npm run build && cd dist && zip -r ../lambda-package.zip . ../node_modules",
     "watch": "tsc -w",
     "cdk": "cdk",
-    "deploy": "cdk deploy --all",
+    "deploy": "npm run build && cdk deploy --all",
     "destroy": "cdk destroy --all",
     "diff": "cdk diff",
-    "synth": "cdk synth",
+    "synth": "npm run build && cdk synth",
     "lint": "eslint --ext .ts lib/ bin/",
     "lint:fix": "eslint --fix --ext .ts lib/ bin/",
     "lint:report": "eslint --format json --output-file eslint-report.json --ext .ts lib/ bin/",
@@ -23,9 +24,7 @@
     "migrate:prod": "NODE_ENV=production node lib/migration-runner.js up",
     "ci:build": "npm run type-check && npm run lint && npm run build",
     "ci:synth": "npm run build && npm run synth",
-    "ci:security-audit": "npm audit --audit-level moderate",
-    "layer:build": "cd lambda-layers/psycopg2 && ./build-layer.sh",
-    "layer:verify": "cd lambda-layers/psycopg2 && ./verify-deployment.sh"
+    "ci:security-audit": "npm audit --audit-level moderate"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.145",

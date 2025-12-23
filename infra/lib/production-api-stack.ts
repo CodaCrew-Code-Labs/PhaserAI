@@ -21,23 +21,17 @@ export class ProductionApiStack extends cdk.Stack {
 
     const { vpc, databaseSecretArn, databaseEndpoint, lambdaSecurityGroup } = props;
 
-    // Create Lambda layer for psycopg2 (PostgreSQL driver)
-    const psycopg2Layer = new lambda.LayerVersion(this, 'Psycopg2Layer', {
-      code: lambda.Code.fromAsset('lambda-layers/psycopg2'),
-      compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
-      description: 'PostgreSQL driver for Lambda',
-    });
+
 
     // Common Lambda function configuration
     const commonLambdaProps = {
-      runtime: lambda.Runtime.PYTHON_3_11,
+      runtime: lambda.Runtime.NODEJS_20_X,
       vpc,
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
       securityGroups: [lambdaSecurityGroup],
       timeout: cdk.Duration.seconds(30),
-      layers: [psycopg2Layer],
       environment: {
         SECRET_ARN: databaseSecretArn,
         DB_ENDPOINT: databaseEndpoint,
@@ -47,9 +41,9 @@ export class ProductionApiStack extends cdk.Stack {
 
     // Health check function (no database required)
     const healthFunction = new lambda.Function(this, 'HealthFunction', {
-      runtime: lambda.Runtime.PYTHON_3_11,
+      runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'health.handler',
-      code: lambda.Code.fromAsset('lambda-functions'),
+      code: lambda.Code.fromAsset('lambda-functions-nodejs/lambda-package.zip'),
       timeout: cdk.Duration.seconds(10),
       logRetention: logs.RetentionDays.ONE_WEEK,
     });
@@ -58,21 +52,21 @@ export class ProductionApiStack extends cdk.Stack {
     const usersFunction = new lambda.Function(this, 'UsersFunction', {
       ...commonLambdaProps,
       handler: 'users.handler',
-      code: lambda.Code.fromAsset('lambda-functions'),
+      code: lambda.Code.fromAsset('lambda-functions-nodejs/lambda-package.zip'),
     });
 
     // Languages Lambda function
     const languagesFunction = new lambda.Function(this, 'LanguagesFunction', {
       ...commonLambdaProps,
       handler: 'languages.handler',
-      code: lambda.Code.fromAsset('lambda-functions'),
+      code: lambda.Code.fromAsset('lambda-functions-nodejs/lambda-package.zip'),
     });
 
     // Words Lambda function
     const wordsFunction = new lambda.Function(this, 'WordsFunction', {
       ...commonLambdaProps,
       handler: 'words.handler',
-      code: lambda.Code.fromAsset('lambda-functions'),
+      code: lambda.Code.fromAsset('lambda-functions-nodejs/lambda-package.zip'),
     });
 
     // Add permissions to read from Secrets Manager

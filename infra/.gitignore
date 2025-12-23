@@ -1,7 +1,40 @@
-*.js
-!jest.config.js
+# CDK
+cdk.out/
 *.d.ts
-node_modules
-cdk.out
-.cdk.staging
+*.js
+*.js.map
+
+# Lambda
+lambda-functions-nodejs/dist/
+lambda-functions-nodejs/lambda-package.zip
+lambda-functions-nodejs/node_modules/
+
+# Python (legacy - can be removed)
+lambda-functions/
+*.pyc
+__pycache__/
+
+# Dependencies
+node_modules/
+
+# Environment
+.env.local
+.env.*.local
+
+# Logs
 *.log
+npm-debug.log*
+
+# Build artifacts
+build/
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

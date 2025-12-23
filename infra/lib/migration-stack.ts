@@ -21,23 +21,16 @@ export class MigrationStack extends cdk.Stack {
 
     const { vpc, databaseSecretArn, databaseEndpoint, lambdaSecurityGroup } = props;
 
-    // Create Lambda layer for psycopg2 (PostgreSQL driver)
-    const psycopg2Layer = new lambda.LayerVersion(this, 'Psycopg2Layer', {
-      code: lambda.Code.fromAsset('lambda-layers/psycopg2'),
-      compatibleRuntimes: [lambda.Runtime.PYTHON_3_11],
-      compatibleArchitectures: [lambda.Architecture.X86_64], // Explicitly set architecture
-      description: 'PostgreSQL driver (psycopg2) for Lambda',
-    });
+
 
     // Create Lambda function for database migrations
     this.migrationFunction = new lambda.Function(this, 'MigrationFunction', {
-      runtime: lambda.Runtime.PYTHON_3_11,
+      runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'migration.handler',
-      code: lambda.Code.fromAsset('lambda-functions'),
-      architecture: lambda.Architecture.X86_64, // Explicitly set architecture
-      timeout: cdk.Duration.minutes(15), // Migrations can take time
+      code: lambda.Code.fromAsset('lambda-functions-nodejs/lambda-package.zip'),
+      architecture: lambda.Architecture.X86_64,
+      timeout: cdk.Duration.minutes(15),
       memorySize: 512,
-      layers: [psycopg2Layer],
       vpc,
       vpcSubnets: {
         subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
