@@ -147,6 +147,10 @@ jobs:
     needs: validate
     if: needs.validate.outputs.should-build == 'true'
     
+    permissions:
+      id-token: write
+      contents: read
+    
     outputs:
       image-digest: ${{ steps.docker.outputs.digest }}
     
