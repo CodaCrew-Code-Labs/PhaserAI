@@ -150,6 +150,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      security-events: write
     
     outputs:
       image-digest: ${{ steps.docker.outputs.digest }}
