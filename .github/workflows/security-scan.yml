@@ -1,0 +1,66 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly Monday 2 AM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  security:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8'
+      
+      - name: Install Dependencies
+        run: |
+          pnpm install --frozen-lockfile || pnpm install
+          cd infra && npm ci
+      
+      - name: Dependency Audit
+        run: |
+          pnpm audit --audit-level moderate || true
+          cd infra && npm audit --audit-level moderate || true
+      
+      - name: Secret Scan
+        run: |
+          git diff origin/${{ github.base_ref || 'HEAD~1' }}...HEAD | \
+          grep -iE "(password|secret|api[_-]?key|token)" | \
+          grep -v "PASSWORD\|SECRET\|API_KEY" || true
+      
+      - name: Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      - name: Upload Results
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif

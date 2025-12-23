@@ -23,12 +23,12 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { ArrowLeft, Plus, X, Save, Sparkles, AlertCircle, Star, Heart } from 'lucide-react';
+import { PhonologicalFeatureSelector, AVAILABLE_FEATURES } from '@/components/PhonologicalFeatureSelector';
 
 const languageSchema = z.object({
   name: z.string().min(1, 'Language name is required').max(100),
   consonants: z.string().min(1, 'At least one consonant is required'),
   vowels: z.string().min(1, 'At least one vowel is required'),
-  diphthongs: z.string().optional(),
   syllables: z.string().min(1, 'Syllable structure is required'),
   rules: z.string().optional(),
 });
@@ -41,16 +41,23 @@ export default function LanguageSetup() {
   const [isLoading, setIsLoading] = useState(false);
   const [consonantTags, setConsonantTags] = useState<string[]>([]);
   const [vowelTags, setVowelTags] = useState<string[]>([]);
-  const [diphthongTags, setDiphthongTags] = useState<string[]>([]);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [featureTags, setFeatureTags] = useState<{ [key: string]: string[] }>({});
   const [consonantMappings, setConsonantMappings] = useState<{ [key: string]: string }>({});
   const [vowelMappings, setVowelMappings] = useState<{ [key: string]: string }>({});
-  const [diphthongMappings, setDiphthongMappings] = useState<{ [key: string]: string }>({});
+  const [featureMappings, setFeatureMappings] = useState<{ [key: string]: { [key: string]: string } }>({});
   const [currentConsonant, setCurrentConsonant] = useState('');
   const [currentConsonantAlphabet, setCurrentConsonantAlphabet] = useState('');
   const [currentVowel, setCurrentVowel] = useState('');
   const [currentVowelAlphabet, setCurrentVowelAlphabet] = useState('');
-  const [currentDiphthong, setCurrentDiphthong] = useState('');
-  const [currentDiphthongAlphabet, setCurrentDiphthongAlphabet] = useState('');
+  const [currentVowelLong, setCurrentVowelLong] = useState('');
+  const [currentVowelLongAlphabet, setCurrentVowelLongAlphabet] = useState('');
+  const [vowelHasLong, setVowelHasLong] = useState(false);
+  const [currentFeature, setCurrentFeature] = useState<{ [key: string]: string }>({});
+  const [currentFeatureAlphabet, setCurrentFeatureAlphabet] = useState<{ [key: string]: string }>({});
+  const [currentFeatureLong, setCurrentFeatureLong] = useState<{ [key: string]: string }>({});
+  const [currentFeatureLongAlphabet, setCurrentFeatureLongAlphabet] = useState<{ [key: string]: string }>({});
+  const [featureHasLong, setFeatureHasLong] = useState<{ [key: string]: boolean }>({});
 
   const form = useForm<LanguageFormData>({
     resolver: zodResolver(languageSchema),
@@ -58,7 +65,6 @@ export default function LanguageSetup() {
       name: '',
       consonants: '',
       vowels: '',
-      diphthongs: '',
       syllables: 'CV',
       rules: '',
     },
@@ -101,13 +107,23 @@ export default function LanguageSetup() {
       currentVowelAlphabet.trim() &&
       !vowelTags.includes(currentVowel.trim())
     ) {
-      const newTags = [...vowelTags, currentVowel.trim()];
-      const newMappings = { ...vowelMappings, [currentVowelAlphabet.trim()]: currentVowel.trim() };
+      let newTags = [...vowelTags, currentVowel.trim()];
+      let newMappings = { ...vowelMappings, [currentVowelAlphabet.trim()]: currentVowel.trim() };
+      
+      // Add long vowel if specified
+      if (vowelHasLong && currentVowelLong.trim() && currentVowelLongAlphabet.trim()) {
+        newTags.push(currentVowelLong.trim());
+        newMappings[currentVowelLongAlphabet.trim()] = currentVowelLong.trim();
+      }
+      
       setVowelTags(newTags);
       setVowelMappings(newMappings);
       form.setValue('vowels', newTags.join(' '));
       setCurrentVowel('');
       setCurrentVowelAlphabet('');
+      setCurrentVowelLong('');
+      setCurrentVowelLongAlphabet('');
+      setVowelHasLong(false);
     }
   };
 
@@ -121,35 +137,46 @@ export default function LanguageSetup() {
     form.setValue('vowels', newTags.join(' '));
   };
 
-  const addDiphthong = () => {
-    if (
-      currentDiphthong.trim() &&
-      currentDiphthongAlphabet.trim() &&
-      !diphthongTags.includes(currentDiphthong.trim())
-    ) {
-      const newTags = [...diphthongTags, currentDiphthong.trim()];
-      const newMappings = {
-        ...diphthongMappings,
-        [currentDiphthongAlphabet.trim()]: currentDiphthong.trim(),
+  const addFeature = (featureKey: string) => {
+    const current = currentFeature[featureKey]?.trim();
+    const currentAlphabet = currentFeatureAlphabet[featureKey]?.trim();
+    
+    if (current && currentAlphabet && !(featureTags[featureKey] || []).includes(current)) {
+      let newTags = [...(featureTags[featureKey] || []), current];
+      let newMappings = {
+        ...(featureMappings[featureKey] || {}),
+        [currentAlphabet]: current,
       };
-      setDiphthongTags(newTags);
-      setDiphthongMappings(newMappings);
-      form.setValue('diphthongs', newTags.join(' '));
-      setCurrentDiphthong('');
-      setCurrentDiphthongAlphabet('');
+      
+      // Add long form if specified (for vowels and diphthongs)
+      if ((featureKey === 'vowels' || featureKey === 'diphthongs') && 
+          featureHasLong[featureKey] && 
+          currentFeatureLong[featureKey]?.trim() && 
+          currentFeatureLongAlphabet[featureKey]?.trim()) {
+        newTags.push(currentFeatureLong[featureKey].trim());
+        newMappings[currentFeatureLongAlphabet[featureKey].trim()] = currentFeatureLong[featureKey].trim();
+      }
+      
+      setFeatureTags(prev => ({ ...prev, [featureKey]: newTags }));
+      setFeatureMappings(prev => ({ ...prev, [featureKey]: newMappings }));
+      setCurrentFeature(prev => ({ ...prev, [featureKey]: '' }));
+      setCurrentFeatureAlphabet(prev => ({ ...prev, [featureKey]: '' }));
+      setCurrentFeatureLong(prev => ({ ...prev, [featureKey]: '' }));
+      setCurrentFeatureLongAlphabet(prev => ({ ...prev, [featureKey]: '' }));
+      setFeatureHasLong(prev => ({ ...prev, [featureKey]: false }));
     }
   };
 
-  const removeDiphthong = (tag: string) => {
-    const newTags = diphthongTags.filter((t) => t !== tag);
-    const alphabetKey = Object.keys(diphthongMappings).find(
-      (key) => diphthongMappings[key] === tag
+  const removeFeature = (featureKey: string, tag: string) => {
+    const newTags = (featureTags[featureKey] || []).filter(t => t !== tag);
+    const alphabetKey = Object.keys(featureMappings[featureKey] || {}).find(
+      key => featureMappings[featureKey]?.[key] === tag
     );
-    const newMappings = { ...diphthongMappings };
+    const newMappings = { ...(featureMappings[featureKey] || {}) };
     if (alphabetKey) delete newMappings[alphabetKey];
-    setDiphthongTags(newTags);
-    setDiphthongMappings(newMappings);
-    form.setValue('diphthongs', newTags.join(' '));
+    
+    setFeatureTags(prev => ({ ...prev, [featureKey]: newTags }));
+    setFeatureMappings(prev => ({ ...prev, [featureKey]: newMappings }));
   };
 
   const onSubmit = async (data: LanguageFormData) => {
@@ -182,19 +209,23 @@ export default function LanguageSetup() {
       }
 
       // Create the language
+      const phonemes = {
+        consonants: consonantTags,
+        vowels: vowelTags,
+        features: featureTags,
+      };
+      
+      const alphabetMappings = {
+        consonants: consonantMappings,
+        vowels: vowelMappings,
+        features: featureMappings,
+      };
+
       await api.createLanguage({
         user_id: user.userId,
         name: data.name,
-        phonemes: {
-          consonants: consonantTags,
-          vowels: vowelTags,
-          diphthongs: diphthongTags,
-        },
-        alphabet_mappings: {
-          consonants: consonantMappings,
-          vowels: vowelMappings,
-          diphthongs: diphthongMappings,
-        },
+        phonemes,
+        alphabet_mappings: alphabetMappings,
         syllables: data.syllables,
         rules: data.rules || '',
       });
@@ -288,42 +319,56 @@ export default function LanguageSetup() {
                   )}
                 />
 
+                <PhonologicalFeatureSelector
+                  selectedFeatures={selectedFeatures}
+                  onFeaturesChange={setSelectedFeatures}
+                />
+
                 <Tabs defaultValue="consonants" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3 bg-white/50 border-2 border-[#DDBCEE]/30 p-1 rounded-2xl">
-                    <TabsTrigger
-                      value="consonants"
-                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#A1FBFC] data-[state=active]:to-[#748BF6] data-[state=active]:text-white text-slate-500 rounded-xl font-semibold transition-all"
-                    >
-                      Consonants
-                      {consonantTags.length > 0 && (
-                        <Badge className="ml-2 bg-[#A1FBFC]/30 text-[#748BF6] border-0 font-bold">
-                          {consonantTags.length}
-                        </Badge>
-                      )}
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="vowels"
-                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#DDBCEE] data-[state=active]:to-[#F269BF] data-[state=active]:text-white text-slate-500 rounded-xl font-semibold transition-all"
-                    >
-                      Vowels
-                      {vowelTags.length > 0 && (
-                        <Badge className="ml-2 bg-[#DDBCEE]/30 text-[#F269BF] border-0 font-bold">
-                          {vowelTags.length}
-                        </Badge>
-                      )}
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="diphthongs"
-                      className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#F5B485] data-[state=active]:to-[#F269BF] data-[state=active]:text-white text-slate-500 rounded-xl font-semibold transition-all"
-                    >
-                      Diphthongs
-                      {diphthongTags.length > 0 && (
-                        <Badge className="ml-2 bg-[#F5B485]/30 text-[#F269BF] border-0 font-bold">
-                          {diphthongTags.length}
-                        </Badge>
-                      )}
-                    </TabsTrigger>
-                  </TabsList>
+                  <div className="w-full overflow-x-auto pb-2">
+                    <TabsList className="flex w-max min-w-full bg-white/50 border-2 border-[#DDBCEE]/30 p-1 rounded-2xl">
+                      <TabsTrigger
+                        value="consonants"
+                        className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#A1FBFC] data-[state=active]:to-[#748BF6] data-[state=active]:text-white text-slate-500 rounded-xl font-semibold transition-all whitespace-nowrap px-4 flex-1"
+                      >
+                        Consonants
+                        {consonantTags.length > 0 && (
+                          <Badge className="ml-2 bg-[#A1FBFC]/30 text-[#748BF6] border-0 font-bold">
+                            {consonantTags.length}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="vowels"
+                        className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#DDBCEE] data-[state=active]:to-[#F269BF] data-[state=active]:text-white text-slate-500 rounded-xl font-semibold transition-all whitespace-nowrap px-4 flex-1"
+                      >
+                        Vowels
+                        {vowelTags.length > 0 && (
+                          <Badge className="ml-2 bg-[#DDBCEE]/30 text-[#F269BF] border-0 font-bold">
+                            {vowelTags.length}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                      {selectedFeatures.map(featureKey => {
+                        const feature = AVAILABLE_FEATURES.find(f => f.key === featureKey);
+                        const count = featureTags[featureKey]?.length || 0;
+                        return (
+                          <TabsTrigger
+                            key={featureKey}
+                            value={featureKey}
+                            className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#F5B485] data-[state=active]:to-[#F269BF] data-[state=active]:text-white text-slate-500 rounded-xl font-semibold transition-all whitespace-nowrap px-4 flex-1"
+                          >
+                            {feature?.label}
+                            {count > 0 && (
+                              <Badge className="ml-2 bg-[#F5B485]/30 text-[#F269BF] border-0 font-bold">
+                                {count}
+                              </Badge>
+                            )}
+                          </TabsTrigger>
+                        );
+                      })}
+                    </TabsList>
+                  </div>
 
                   <TabsContent value="consonants" className="space-y-4 mt-6">
                     <FormField
@@ -411,6 +456,18 @@ export default function LanguageSetup() {
                             Vowel Inventory
                           </FormLabel>
                           <div className="space-y-3">
+                            <div className="flex items-center gap-3 mb-3">
+                              <input
+                                type="checkbox"
+                                id="vowel-has-long"
+                                checked={vowelHasLong}
+                                onChange={(e) => setVowelHasLong(e.target.checked)}
+                                className="rounded border-[#DDBCEE]/40"
+                              />
+                              <label htmlFor="vowel-has-long" className="text-sm text-slate-600">
+                                Add long vowel form
+                              </label>
+                            </div>
                             <div className="grid grid-cols-2 gap-3">
                               <FormControl>
                                 <Input
@@ -435,6 +492,32 @@ export default function LanguageSetup() {
                                 />
                               </FormControl>
                             </div>
+                            {vowelHasLong && (
+                              <div className="grid grid-cols-2 gap-3 p-3 bg-[#DDBCEE]/10 rounded-xl border border-[#DDBCEE]/30">
+                                <FormControl>
+                                  <Input
+                                    placeholder="Long alphabet (e.g., aa, ee, ii)"
+                                    value={currentVowelLongAlphabet}
+                                    onChange={(e) => setCurrentVowelLongAlphabet(e.target.value)}
+                                    className="bg-white border-2 border-[#DDBCEE]/40 focus:border-[#F269BF] text-slate-800 placeholder:text-slate-400 rounded-xl h-10"
+                                  />
+                                </FormControl>
+                                <FormControl>
+                                  <Input
+                                    placeholder="Long IPA (e.g., aː, eː, iː)"
+                                    value={currentVowelLong}
+                                    onChange={(e) => setCurrentVowelLong(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        addVowel();
+                                      }
+                                    }}
+                                    className="bg-white border-2 border-[#DDBCEE]/40 focus:border-[#F269BF] text-slate-800 placeholder:text-slate-400 rounded-xl h-10"
+                                  />
+                                </FormControl>
+                              </div>
+                            )}
                             <Button
                               type="button"
                               onClick={addVowel}
@@ -477,82 +560,123 @@ export default function LanguageSetup() {
                     />
                   </TabsContent>
 
-                  <TabsContent value="diphthongs" className="space-y-4 mt-6">
-                    <FormField
-                      control={form.control}
-                      name="diphthongs"
-                      render={() => (
-                        <FormItem>
-                          <FormLabel className="text-slate-700 font-medium">
-                            Diphthongs (Optional)
-                          </FormLabel>
-                          <div className="space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
-                              <FormControl>
-                                <Input
-                                  placeholder="Alphabet (e.g., ai, ou, ei)"
-                                  value={currentDiphthongAlphabet}
-                                  onChange={(e) => setCurrentDiphthongAlphabet(e.target.value)}
-                                  className="bg-white border-2 border-[#F5B485]/40 focus:border-[#F269BF] text-slate-800 placeholder:text-slate-400 rounded-xl h-10"
-                                />
-                              </FormControl>
-                              <FormControl>
-                                <Input
-                                  placeholder="IPA (e.g., ai, au, oi)"
-                                  value={currentDiphthong}
-                                  onChange={(e) => setCurrentDiphthong(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault();
-                                      addDiphthong();
-                                    }
-                                  }}
-                                  className="bg-white border-2 border-[#F5B485]/40 focus:border-[#F269BF] text-slate-800 placeholder:text-slate-400 rounded-xl h-10"
-                                />
-                              </FormControl>
+                    {selectedFeatures.map(featureKey => {
+                      const feature = AVAILABLE_FEATURES.find(f => f.key === featureKey);
+                      const tags = featureTags[featureKey] || [];
+                      const mappings = featureMappings[featureKey] || {};
+                      
+                      return (
+                        <TabsContent key={featureKey} value={featureKey} className="space-y-4 mt-6">
+                          <FormItem>
+                            <FormLabel className="text-slate-700 font-medium">
+                              {feature?.label} (Optional)
+                            </FormLabel>
+                            <div className="space-y-3">
+                              {(featureKey === 'diphthongs') && (
+                                <div className="flex items-center gap-3 mb-3">
+                                  <input
+                                    type="checkbox"
+                                    id={`${featureKey}-has-long`}
+                                    checked={featureHasLong[featureKey] || false}
+                                    onChange={(e) => setFeatureHasLong(prev => ({ ...prev, [featureKey]: e.target.checked }))}
+                                    className="rounded border-[#F5B485]/40"
+                                  />
+                                  <label htmlFor={`${featureKey}-has-long`} className="text-sm text-slate-600">
+                                    Add long form
+                                  </label>
+                                </div>
+                              )}
+                              <div className="grid grid-cols-2 gap-3">
+                                <FormControl>
+                                  <Input
+                                    placeholder={`Alphabet (e.g., ${featureKey === 'diphthongs' ? 'ai, ou, ei' : 'examples'})`}
+                                    value={currentFeatureAlphabet[featureKey] || ''}
+                                    onChange={(e) => setCurrentFeatureAlphabet(prev => ({ ...prev, [featureKey]: e.target.value }))}
+                                    className="bg-white border-2 border-[#F5B485]/40 focus:border-[#F269BF] text-slate-800 placeholder:text-slate-400 rounded-xl h-10"
+                                  />
+                                </FormControl>
+                                <FormControl>
+                                  <Input
+                                    placeholder={`IPA (e.g., ${featureKey === 'diphthongs' ? 'ai, au, oi' : 'IPA symbols'})`}
+                                    value={currentFeature[featureKey] || ''}
+                                    onChange={(e) => setCurrentFeature(prev => ({ ...prev, [featureKey]: e.target.value }))}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        addFeature(featureKey);
+                                      }
+                                    }}
+                                    className="bg-white border-2 border-[#F5B485]/40 focus:border-[#F269BF] text-slate-800 placeholder:text-slate-400 rounded-xl h-10"
+                                  />
+                                </FormControl>
+                              </div>
+                              {(featureKey === 'diphthongs') && featureHasLong[featureKey] && (
+                                <div className="grid grid-cols-2 gap-3 p-3 bg-[#F5B485]/10 rounded-xl border border-[#F5B485]/30">
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Long alphabet (e.g., aii, ouu, eii)"
+                                      value={currentFeatureLongAlphabet[featureKey] || ''}
+                                      onChange={(e) => setCurrentFeatureLongAlphabet(prev => ({ ...prev, [featureKey]: e.target.value }))}
+                                      className="bg-white border-2 border-[#F5B485]/40 focus:border-[#F269BF] text-slate-800 placeholder:text-slate-400 rounded-xl h-10"
+                                    />
+                                  </FormControl>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Long IPA (e.g., aiː, auː, oiː)"
+                                      value={currentFeatureLong[featureKey] || ''}
+                                      onChange={(e) => setCurrentFeatureLong(prev => ({ ...prev, [featureKey]: e.target.value }))}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.preventDefault();
+                                          addFeature(featureKey);
+                                        }
+                                      }}
+                                      className="bg-white border-2 border-[#F5B485]/40 focus:border-[#F269BF] text-slate-800 placeholder:text-slate-400 rounded-xl h-10"
+                                    />
+                                  </FormControl>
+                                </div>
+                              )}
+                              <Button
+                                type="button"
+                                onClick={() => addFeature(featureKey)}
+                                className="w-full bg-gradient-to-r from-[#F5B485] to-[#F269BF] hover:opacity-90 text-white font-bold rounded-xl h-10"
+                              >
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add {feature?.label}
+                              </Button>
                             </div>
-                            <Button
-                              type="button"
-                              onClick={addDiphthong}
-                              className="w-full bg-gradient-to-r from-[#F5B485] to-[#F269BF] hover:opacity-90 text-white font-bold rounded-xl h-10"
-                            >
-                              <Plus className="mr-2 h-4 w-4" />
-                              Add Diphthong
-                            </Button>
-                          </div>
-                          <FormDescription className="text-slate-500 text-xs">
-                            Map alphabet letters to IPA symbols. Both fields required.
-                          </FormDescription>
-                          <div className="flex flex-wrap gap-2 mt-4">
-                            {diphthongTags.map((tag) => {
-                              const alphabetKey = Object.keys(diphthongMappings).find(
-                                (key) => diphthongMappings[key] === tag
-                              );
-                              return (
-                                <Badge
-                                  key={tag}
-                                  className="px-3 py-1.5 bg-[#F5B485]/30 text-[#F269BF] border-2 border-[#F5B485]/50 hover:bg-[#F5B485]/50 rounded-full font-semibold"
-                                >
-                                  <span className="font-mono">
-                                    {alphabetKey} → {tag}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeDiphthong(tag)}
-                                    className="ml-2 hover:text-red-500 transition-colors"
+                            <FormDescription className="text-slate-500 text-xs">
+                              {feature?.description}. Both fields required.
+                            </FormDescription>
+                            <div className="flex flex-wrap gap-2 mt-4">
+                              {tags.map((tag) => {
+                                const alphabetKey = Object.keys(mappings).find(
+                                  (key) => mappings[key] === tag
+                                );
+                                return (
+                                  <Badge
+                                    key={tag}
+                                    className="px-3 py-1.5 bg-[#F5B485]/30 text-[#F269BF] border-2 border-[#F5B485]/50 hover:bg-[#F5B485]/50 rounded-full font-semibold"
                                   >
-                                    <X className="h-3.5 w-3.5" />
-                                  </button>
-                                </Badge>
-                              );
-                            })}
-                          </div>
-                          <FormMessage className="text-red-500 text-xs" />
-                        </FormItem>
-                      )}
-                    />
-                  </TabsContent>
-                </Tabs>
+                                    <span className="font-mono">
+                                      {alphabetKey} → {tag}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeFeature(featureKey, tag)}
+                                      className="ml-2 hover:text-red-500 transition-colors"
+                                    >
+                                      <X className="h-3.5 w-3.5" />
+                                    </button>
+                                  </Badge>
+                                );
+                              })}
+                            </div>
+                          </FormItem>
+                        </TabsContent>
+                      );
+                    })}
+                  </Tabs>
 
                 <FormField
                   control={form.control}

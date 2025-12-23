@@ -24,7 +24,8 @@ interface Language {
   phonemes: {
     consonants: string[];
     vowels: string[];
-    diphthongs: string[];
+    diphthongs?: string[];
+    features?: { [key: string]: string[] };
   };
   syllables: string;
   created_at: string;
@@ -332,6 +333,25 @@ export default function Dashboard() {
                       <span className="text-slate-600 text-sm font-medium">Vowels</span>
                       <span className="text-slate-800 font-black text-lg">
                         {language.phonemes.vowels.length}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-white/50 border border-slate-200/50">
+                      <span className="text-slate-600 text-sm font-medium">Special Phonemes</span>
+                      <span className="text-slate-800 font-black text-lg">
+                        {(() => {
+                          let count = 0;
+                          // Count diphthongs (backward compatibility)
+                          if (language.phonemes.diphthongs) {
+                            count += language.phonemes.diphthongs.length;
+                          }
+                          // Count features
+                          if (language.phonemes.features) {
+                            Object.values(language.phonemes.features).forEach(arr => {
+                              count += arr.length;
+                            });
+                          }
+                          return count;
+                        })()}
                       </span>
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-2xl bg-white/50 border border-slate-200/50">

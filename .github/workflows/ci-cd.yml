@@ -117,17 +117,6 @@ jobs:
           pnpm run format:check || echo "⚠️ Format issues found"
           pnpm run type-check
       
-      - name: Security Scans
-        run: |
-          echo "🔒 Running security scans..."
-          pnpm audit --audit-level moderate || echo "⚠️ Frontend vulnerabilities found"
-          cd infra && npm audit --audit-level moderate || echo "⚠️ Infrastructure vulnerabilities found"
-          
-          # Secret scanning
-          if git diff origin/${{ github.base_ref || 'HEAD~1' }}...HEAD | grep -iE "(password|secret|api[_-]?key|token)" | grep -v "PASSWORD\|SECRET\|API_KEY"; then
-            echo "⚠️ Potential secrets detected"
-          fi
-      
       - name: PR Size Check
         if: github.event_name == 'pull_request'
         run: |
@@ -265,19 +254,6 @@ jobs:
           echo "🔒 Infrastructure security checks..."
           grep -r "0.0.0.0/0" cdk.out/ --include="*.json" | head -5 || echo "✅ No public access"
           grep -r "Encrypted.*false" cdk.out/ --include="*.json" | head -5 || echo "✅ All encrypted"
-      
-      - name: Container Security Scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          input: phaserai-image.tar.gz
-          format: sarif
-          output: trivy-results.sarif
-      
-      - name: Upload Security Results
-        uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        with:
-          sarif_file: trivy-results.sarif
       
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
