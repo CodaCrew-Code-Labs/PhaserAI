@@ -62,6 +62,8 @@ export default function LanguageSetup() {
   const [currentFeatureLongAlphabet, setCurrentFeatureLongAlphabet] = useState<{ [key: string]: string }>({});
   const [featureHasLong, setFeatureHasLong] = useState<{ [key: string]: boolean }>({});
   const [syllableRules, setSyllableRules] = useState<{ [key: string]: string[] }>({});
+  const [vowelPairs, setVowelPairs] = useState<Map<string, { short: string, long: string }>>(new Map());
+  const [featurePairs, setFeaturePairs] = useState<{ [key: string]: Map<string, { short: string, long: string }> }>({});
 
   const form = useForm<LanguageFormData>({
     resolver: zodResolver(languageSchema),
@@ -69,7 +71,7 @@ export default function LanguageSetup() {
       name: '',
       consonants: '',
       vowels: '',
-      syllables: 'CV',
+      syllables: '',
       rules: '',
     },
   });
@@ -134,6 +136,14 @@ export default function LanguageSetup() {
         }
         newTags.push(currentVowelLong.trim());
         newMappings[currentVowelLongAlphabet.trim()] = currentVowelLong.trim();
+        
+        // Store the pair relationship
+        const newPairs = new Map(vowelPairs);
+        newPairs.set(currentVowel.trim(), { 
+          short: currentVowel.trim(), 
+          long: currentVowelLong.trim() 
+        });
+        setVowelPairs(newPairs);
       }
       
       setVowelTags(newTags);
@@ -174,9 +184,8 @@ export default function LanguageSetup() {
         [currentAlphabet]: current,
       };
       
-      // Add long form if specified (for vowels and diphthongs)
-      if ((featureKey === 'vowels' || featureKey === 'diphthongs') && 
-          featureHasLong[featureKey] && 
+      // Add long form if specified
+      if (featureHasLong[featureKey] && 
           currentFeatureLong[featureKey]?.trim() && 
           currentFeatureLongAlphabet[featureKey]?.trim()) {
         const existingLongIPA = featureMappings[featureKey]?.[currentFeatureLongAlphabet[featureKey].trim()];
@@ -185,6 +194,14 @@ export default function LanguageSetup() {
         }
         newTags.push(currentFeatureLong[featureKey].trim());
         newMappings[currentFeatureLongAlphabet[featureKey].trim()] = currentFeatureLong[featureKey].trim();
+        
+        // Store the pair relationship
+        const newPairs = new Map(featurePairs[featureKey] || new Map());
+        newPairs.set(current, { 
+          short: current, 
+          long: currentFeatureLong[featureKey].trim() 
+        });
+        setFeaturePairs(prev => ({ ...prev, [featureKey]: newPairs }));
       }
       
       setFeatureTags(prev => ({ ...prev, [featureKey]: newTags }));
@@ -605,35 +622,83 @@ export default function LanguageSetup() {
                             Map alphabet letters to IPA symbols. Both fields required.
                           </FormDescription>
                           <div className="flex flex-wrap gap-2 mt-4">
-                            {vowelTags.map((tag) => {
-                              const alphabetKey = Object.keys(vowelMappings).find(
-                                (key) => vowelMappings[key] === tag
-                              );
-                              return (
-                                <Badge
-                                  key={tag}
-                                  className="px-3 py-1.5 bg-[#DDBCEE]/30 text-[#F269BF] border-2 border-[#DDBCEE]/50 hover:bg-[#DDBCEE]/50 rounded-full font-semibold cursor-pointer"
-                                  onClick={() => {
-                                    setCurrentVowelAlphabet(alphabetKey || '');
-                                    setCurrentVowel(tag);
-                                  }}
-                                >
-                                  <span className="font-mono">
-                                    {alphabetKey} → {tag}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      removeVowel(tag);
+                            {(() => {
+                              const displayed = new Set<string>();
+                              return vowelTags.map((tag) => {
+                                if (displayed.has(tag)) return null;
+                                
+                                const alphabetKey = Object.keys(vowelMappings).find(key => vowelMappings[key] === tag);
+                                const pair = vowelPairs.get(tag) || Array.from(vowelPairs.values()).find(p => p.long === tag);
+                                
+                                if (pair) {
+                                  displayed.add(pair.short);
+                                  displayed.add(pair.long);
+                                  const shortAlphabet = Object.keys(vowelMappings).find(k => vowelMappings[k] === pair.short);
+                                  const longAlphabet = Object.keys(vowelMappings).find(k => vowelMappings[k] === pair.long);
+                                  
+                                  return (
+                                    <div key={tag} className="flex items-center gap-1 px-3 py-1.5 bg-[#DDBCEE]/20 border-2 border-[#DDBCEE]/50 rounded-full">
+                                      <Badge className="bg-[#DDBCEE]/50 text-[#F269BF] border-0 font-semibold cursor-pointer hover:bg-[#DDBCEE]/70"
+                                        onClick={() => {
+                                          setCurrentVowelAlphabet(shortAlphabet || '');
+                                          setCurrentVowel(pair.short);
+                                          setVowelHasLong(true);
+                                          setCurrentVowelLongAlphabet(longAlphabet || '');
+                                          setCurrentVowelLong(pair.long);
+                                        }}>
+                                        <span className="font-mono">{shortAlphabet} → {pair.short}</span>
+                                      </Badge>
+                                      <span className="text-[#F269BF] font-bold text-sm">+</span>
+                                      <Badge className="bg-[#DDBCEE]/50 text-[#F269BF] border-0 font-semibold cursor-pointer hover:bg-[#DDBCEE]/70"
+                                        onClick={() => {
+                                          setCurrentVowelAlphabet(shortAlphabet || '');
+                                          setCurrentVowel(pair.short);
+                                          setVowelHasLong(true);
+                                          setCurrentVowelLongAlphabet(longAlphabet || '');
+                                          setCurrentVowelLong(pair.long);
+                                        }}>
+                                        <span className="font-mono">{longAlphabet} → {pair.long}</span>
+                                      </Badge>
+                                      <button type="button" onClick={() => {
+                                        removeVowel(pair.short);
+                                        removeVowel(pair.long);
+                                        const newPairs = new Map(vowelPairs);
+                                        newPairs.delete(pair.short);
+                                        setVowelPairs(newPairs);
+                                      }} className="ml-1 hover:text-red-500 transition-colors">
+                                        <X className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  );
+                                }
+                                
+                                displayed.add(tag);
+                                return (
+                                  <Badge
+                                    key={tag}
+                                    className="px-3 py-1.5 bg-[#DDBCEE]/30 text-[#F269BF] border-2 border-[#DDBCEE]/50 hover:bg-[#DDBCEE]/50 rounded-full font-semibold cursor-pointer"
+                                    onClick={() => {
+                                      setCurrentVowelAlphabet(alphabetKey || '');
+                                      setCurrentVowel(tag);
                                     }}
-                                    className="ml-2 hover:text-red-500 transition-colors"
                                   >
-                                    <X className="h-3.5 w-3.5" />
-                                  </button>
-                                </Badge>
-                              );
-                            })}
+                                    <span className="font-mono">
+                                      {alphabetKey} → {tag}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeVowel(tag);
+                                      }}
+                                      className="ml-2 hover:text-red-500 transition-colors"
+                                    >
+                                      <X className="h-3.5 w-3.5" />
+                                    </button>
+                                  </Badge>
+                                );
+                              });
+                            })()}
                           </div>
                           <FormMessage className="text-red-500 text-xs" />
                         </FormItem>
@@ -654,20 +719,18 @@ export default function LanguageSetup() {
                               {feature?.label} (Optional)
                             </FormLabel>
                             <div className="space-y-3">
-                              {(featureKey === 'diphthongs') && (
-                                <div className="flex items-center gap-3 mb-3">
-                                  <input
-                                    type="checkbox"
-                                    id={`${featureKey}-has-long`}
-                                    checked={featureHasLong[featureKey] || false}
-                                    onChange={(e) => setFeatureHasLong(prev => ({ ...prev, [featureKey]: e.target.checked }))}
-                                    className="rounded border-[#F5B485]/40"
-                                  />
-                                  <label htmlFor={`${featureKey}-has-long`} className="text-sm text-slate-600">
-                                    Add long form
-                                  </label>
-                                </div>
-                              )}
+                              <div className="flex items-center gap-3 mb-3">
+                                <input
+                                  type="checkbox"
+                                  id={`${featureKey}-has-long`}
+                                  checked={featureHasLong[featureKey] || false}
+                                  onChange={(e) => setFeatureHasLong(prev => ({ ...prev, [featureKey]: e.target.checked }))}
+                                  className="rounded border-[#F5B485]/40"
+                                />
+                                <label htmlFor={`${featureKey}-has-long`} className="text-sm text-slate-600">
+                                  Add long form
+                                </label>
+                              </div>
                               <div className="grid grid-cols-2 gap-3">
                                 <FormControl>
                                   <Input
@@ -692,7 +755,7 @@ export default function LanguageSetup() {
                                   />
                                 </FormControl>
                               </div>
-                              {(featureKey === 'diphthongs') && featureHasLong[featureKey] && (
+                              {featureHasLong[featureKey] && (
                                 <div className="grid grid-cols-2 gap-3 p-3 bg-[#F5B485]/10 rounded-xl border border-[#F5B485]/30">
                                   <FormControl>
                                     <Input
@@ -721,7 +784,10 @@ export default function LanguageSetup() {
                               <Button
                                 type="button"
                                 onClick={() => addFeature(featureKey)}
-                                className="w-full bg-gradient-to-r from-[#F5B485] to-[#F269BF] hover:opacity-90 text-white font-bold rounded-xl h-10"
+                                className="w-full hover:opacity-90 text-white font-bold rounded-xl h-10"
+                                style={{
+                                  backgroundImage: `linear-gradient(to right, ${color.from}, ${color.to})`,
+                                }}
                               >
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add {feature?.label}
@@ -731,39 +797,88 @@ export default function LanguageSetup() {
                               {feature?.description}. Both fields required.
                             </FormDescription>
                             <div className="flex flex-wrap gap-2 mt-4">
-                              {tags.map((tag) => {
-                                const alphabetKey = Object.keys(mappings).find(
-                                  (key) => mappings[key] === tag
-                                );
-                                return (
-                                  <Badge
-                                    key={tag}
-                                    className="px-3 py-1.5 text-white border-2 hover:opacity-80 rounded-full font-semibold cursor-pointer"
-                                    style={{
-                                      backgroundImage: `linear-gradient(to right, ${color.from}, ${color.to})`,
-                                      borderColor: `${color.border}80`,
-                                    }}
-                                    onClick={() => {
-                                      setCurrentFeatureAlphabet(prev => ({ ...prev, [featureKey]: alphabetKey || '' }));
-                                      setCurrentFeature(prev => ({ ...prev, [featureKey]: tag }));
-                                    }}
-                                  >
-                                    <span className="font-mono">
-                                      {alphabetKey} → {tag}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeFeature(featureKey, tag);
+                              {(() => {
+                                const displayed = new Set<string>();
+                                const pairs = featurePairs[featureKey] || new Map();
+                                return tags.map((tag) => {
+                                  if (displayed.has(tag)) return null;
+                                  
+                                  const alphabetKey = Object.keys(mappings).find(key => mappings[key] === tag);
+                                  const pair = pairs.get(tag) || Array.from(pairs.values()).find(p => p.long === tag);
+                                  
+                                  if (pair) {
+                                    displayed.add(pair.short);
+                                    displayed.add(pair.long);
+                                    const shortAlphabet = Object.keys(mappings).find(k => mappings[k] === pair.short);
+                                    const longAlphabet = Object.keys(mappings).find(k => mappings[k] === pair.long);
+                                    
+                                    return (
+                                      <div key={tag} className="flex items-center gap-1 px-3 py-1.5 bg-white/50 border-2 rounded-full" style={{ borderColor: `${color.border}80` }}>
+                                        <Badge className="border-0 font-semibold cursor-pointer hover:opacity-80" style={{ backgroundImage: `linear-gradient(to right, ${color.from}, ${color.to})`, color: 'white' }}
+                                          onClick={() => {
+                                            setCurrentFeatureAlphabet(prev => ({ ...prev, [featureKey]: shortAlphabet || '' }));
+                                            setCurrentFeature(prev => ({ ...prev, [featureKey]: pair.short }));
+                                            setFeatureHasLong(prev => ({ ...prev, [featureKey]: true }));
+                                            setCurrentFeatureLongAlphabet(prev => ({ ...prev, [featureKey]: longAlphabet || '' }));
+                                            setCurrentFeatureLong(prev => ({ ...prev, [featureKey]: pair.long }));
+                                          }}>
+                                          <span className="font-mono">{shortAlphabet} → {pair.short}</span>
+                                        </Badge>
+                                        <span className="font-bold text-sm" style={{ color: color.from }}>+</span>
+                                        <Badge className="border-0 font-semibold cursor-pointer hover:opacity-80" style={{ backgroundImage: `linear-gradient(to right, ${color.from}, ${color.to})`, color: 'white' }}
+                                          onClick={() => {
+                                            setCurrentFeatureAlphabet(prev => ({ ...prev, [featureKey]: shortAlphabet || '' }));
+                                            setCurrentFeature(prev => ({ ...prev, [featureKey]: pair.short }));
+                                            setFeatureHasLong(prev => ({ ...prev, [featureKey]: true }));
+                                            setCurrentFeatureLongAlphabet(prev => ({ ...prev, [featureKey]: longAlphabet || '' }));
+                                            setCurrentFeatureLong(prev => ({ ...prev, [featureKey]: pair.long }));
+                                          }}>
+                                          <span className="font-mono">{longAlphabet} → {pair.long}</span>
+                                        </Badge>
+                                        <button type="button" onClick={() => {
+                                          removeFeature(featureKey, pair.short);
+                                          removeFeature(featureKey, pair.long);
+                                          const newPairs = new Map(pairs);
+                                          newPairs.delete(pair.short);
+                                          setFeaturePairs(prev => ({ ...prev, [featureKey]: newPairs }));
+                                        }} className="ml-1 hover:text-red-500 transition-colors">
+                                          <X className="h-3.5 w-3.5" />
+                                        </button>
+                                      </div>
+                                    );
+                                  }
+                                  
+                                  displayed.add(tag);
+                                  return (
+                                    <Badge
+                                      key={tag}
+                                      className="px-3 py-1.5 text-white border-2 hover:opacity-80 rounded-full font-semibold cursor-pointer"
+                                      style={{
+                                        backgroundImage: `linear-gradient(to right, ${color.from}, ${color.to})`,
+                                        borderColor: `${color.border}80`,
                                       }}
-                                      className="ml-2 hover:text-red-500 transition-colors"
+                                      onClick={() => {
+                                        setCurrentFeatureAlphabet(prev => ({ ...prev, [featureKey]: alphabetKey || '' }));
+                                        setCurrentFeature(prev => ({ ...prev, [featureKey]: tag }));
+                                      }}
                                     >
-                                      <X className="h-3.5 w-3.5" />
-                                    </button>
-                                  </Badge>
-                                );
-                              })}
+                                      <span className="font-mono">
+                                        {alphabetKey} → {tag}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          removeFeature(featureKey, tag);
+                                        }}
+                                        className="ml-2 hover:text-red-500 transition-colors"
+                                      >
+                                        <X className="h-3.5 w-3.5" />
+                                      </button>
+                                    </Badge>
+                                  );
+                                });
+                              })()}
                             </div>
                           </FormItem>
                         </TabsContent>

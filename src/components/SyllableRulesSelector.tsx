@@ -52,19 +52,40 @@ export function SyllableRulesSelector({
     onRulesChange({ ...syllableRules, [posKey]: newRules });
   };
 
+  const getHiddenAlphabets = (selected: string[]) => {
+    const hidden: string[] = [];
+    selected.forEach(item => {
+      if (item === 'group:consonants') {
+        hidden.push(...Object.keys(consonantMappings || {}));
+      } else if (item === 'group:vowels') {
+        hidden.push(...Object.keys(vowelMappings || {}));
+      } else if (item === 'group:diphthongs') {
+        hidden.push(...Object.keys(featureMappings?.diphthongs || {}));
+      } else if (item === 'group:semivowels') {
+        hidden.push(...Object.keys(featureMappings?.semivowels || {}));
+      } else if (item.startsWith('group:')) {
+        const featureKey = item.replace('group:', '');
+        hidden.push(...Object.keys(featureMappings?.[featureKey] || {}));
+      }
+    });
+    return hidden;
+  };
+
   const getAvailableOptions = (posKey: string) => {
-    const semivowelAlphabets = Object.keys(featureMappings?.semivowels || {});
-    
     if (posKey === 'nucleus') {
-      // Nucleus: vowels + diphthongs + semivowels
+      // Nucleus: vowels + diphthongs + semivowels (if they exist)
       const vowelAlphabets = Object.keys(vowelMappings || {});
       const diphthongAlphabets = Object.keys(featureMappings?.diphthongs || {});
+      const semivowelAlphabets = Object.keys(featureMappings?.semivowels || {});
+      
+      const groups = [
+        { key: 'group:vowels', label: 'All Vowels' },
+        ...(diphthongAlphabets.length > 0 ? [{ key: 'group:diphthongs', label: 'All Diphthongs' }] : []),
+        ...(semivowelAlphabets.length > 0 ? [{ key: 'group:semivowels', label: 'All Semivowels' }] : []),
+      ];
+      
       return {
-        groups: [
-          { key: 'group:vowels', label: 'All Vowels' },
-          { key: 'group:diphthongs', label: 'All Diphthongs' },
-          { key: 'group:semivowels', label: 'All Semivowels' },
-        ],
+        groups,
         alphabets: [...vowelAlphabets, ...diphthongAlphabets, ...semivowelAlphabets],
       };
     } else {
@@ -105,6 +126,8 @@ export function SyllableRulesSelector({
         {SYLLABLE_POSITIONS.map(pos => {
           const options = getAvailableOptions(pos.key);
           const selected = syllableRules[pos.key] || [];
+          const hiddenAlphabets = getHiddenAlphabets(selected);
+          const visibleAlphabets = options.alphabets.filter(alpha => !hiddenAlphabets.includes(alpha));
           
           return (
             <div key={pos.key} className="p-4 bg-white rounded-xl border-2 border-[#F5B485]/20">
@@ -134,11 +157,11 @@ export function SyllableRulesSelector({
                 </div>
 
                 {/* Individual alphabets */}
-                {options.alphabets.length > 0 && (
+                {visibleAlphabets.length > 0 && (
                   <div>
                     <p className="text-xs text-slate-500 mb-2">Individual Letters:</p>
                     <div className="flex flex-wrap gap-2">
-                      {options.alphabets.map(alpha => (
+                      {visibleAlphabets.map(alpha => (
                         <Badge
                           key={alpha}
                           onClick={() => toggleRule(pos.key, alpha)}

@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 interface IPAChartProps {
   enabledConsonants: string[];
   enabledVowels: string[];
+  enabledFeatures?: { [key: string]: string[] };
 }
 
 // IPA Consonant Chart (Pulmonic)
@@ -63,7 +64,20 @@ const vowelChart = {
   ],
 };
 
-export function IPAChart({ enabledConsonants, enabledVowels }: IPAChartProps) {
+export function IPAChart({ enabledConsonants, enabledVowels, enabledFeatures = {} }: IPAChartProps) {
+  // Collect all feature phonemes and categorize them
+  const allFeaturePhonemes = Object.values(enabledFeatures).flat();
+  
+  // Determine which feature phonemes are consonants vs vowels based on IPA chart
+  const allConsonantPhonemes = consonantChart.rows.flatMap(row => row.phonemes);
+  const allVowelPhonemes = vowelChart.rows.flatMap(row => row.phonemes);
+  
+  const featureConsonants = allFeaturePhonemes.filter(p => allConsonantPhonemes.includes(p));
+  const featureVowels = allFeaturePhonemes.filter(p => allVowelPhonemes.includes(p));
+  
+  // Combine with explicitly defined consonants/vowels
+  const allEnabledConsonants = [...enabledConsonants, ...featureConsonants];
+  const allEnabledVowels = [...enabledVowels, ...featureVowels];
   return (
     <Tabs defaultValue="consonants" className="w-full">
       <TabsList className="grid w-full grid-cols-2 bg-white/50 border-2 border-[#DDBCEE]/30 p-1 rounded-2xl">
@@ -72,9 +86,9 @@ export function IPAChart({ enabledConsonants, enabledVowels }: IPAChartProps) {
           className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#A1FBFC] data-[state=active]:to-[#748BF6] data-[state=active]:text-white text-slate-500 rounded-xl font-semibold transition-all"
         >
           Consonants
-          {enabledConsonants.length > 0 && (
+          {allEnabledConsonants.length > 0 && (
             <Badge className="ml-2 bg-[#A1FBFC]/30 text-[#748BF6] border-0 font-bold">
-              {enabledConsonants.length}
+              {allEnabledConsonants.length}
             </Badge>
           )}
         </TabsTrigger>
@@ -83,9 +97,9 @@ export function IPAChart({ enabledConsonants, enabledVowels }: IPAChartProps) {
           className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#DDBCEE] data-[state=active]:to-[#F269BF] data-[state=active]:text-white text-slate-500 rounded-xl font-semibold transition-all"
         >
           Vowels
-          {enabledVowels.length > 0 && (
+          {allEnabledVowels.length > 0 && (
             <Badge className="ml-2 bg-[#DDBCEE]/30 text-[#F269BF] border-0 font-bold">
-              {enabledVowels.length}
+              {allEnabledVowels.length}
             </Badge>
           )}
         </TabsTrigger>
@@ -99,7 +113,7 @@ export function IPAChart({ enabledConsonants, enabledVowels }: IPAChartProps) {
                 <div className="w-44 text-sm font-medium text-slate-500 shrink-0">{row.name}</div>
                 <div className="flex flex-wrap gap-2">
                   {row.phonemes.map((phoneme) => {
-                    const isEnabled = enabledConsonants.includes(phoneme);
+                    const isEnabled = allEnabledConsonants.includes(phoneme);
                     return (
                       <Badge
                         key={phoneme}
@@ -131,7 +145,7 @@ export function IPAChart({ enabledConsonants, enabledVowels }: IPAChartProps) {
                 <div className="w-44 text-sm font-medium text-slate-500 shrink-0">{row.name}</div>
                 <div className="flex flex-wrap gap-2">
                   {row.phonemes.map((phoneme) => {
-                    const isEnabled = enabledVowels.includes(phoneme);
+                    const isEnabled = allEnabledVowels.includes(phoneme);
                     return (
                       <Badge
                         key={phoneme}
