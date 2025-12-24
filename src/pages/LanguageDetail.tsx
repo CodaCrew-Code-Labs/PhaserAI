@@ -36,6 +36,8 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { PhonologicalFeatureSelector, AVAILABLE_FEATURES } from '@/components/PhonologicalFeatureSelector';
+import { SyllableRulesSelector } from '@/components/SyllableRulesSelector';
+import { getFeatureColor } from '@/lib/feature-colors';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -75,6 +77,7 @@ interface Language {
     diphthongs?: { [key: string]: string }; // For backward compatibility
   };
   syllables: string;
+  syllable_rules?: { [key: string]: string[] };
   rules: string;
   created_at: string;
 }
@@ -107,6 +110,7 @@ export default function LanguageDetail() {
   const [currentFeatureLongAlphabet, setCurrentFeatureLongAlphabet] = useState<{ [key: string]: string }>({});
   const [featureHasLong, setFeatureHasLong] = useState<{ [key: string]: boolean }>({});
   const [wordCount, setWordCount] = useState(0);
+  const [syllableRules, setSyllableRules] = useState<{ [key: string]: string[] }>({});
 
   const form = useForm<LanguageFormData>({
     resolver: zodResolver(languageSchema),
@@ -149,6 +153,7 @@ export default function LanguageDetail() {
       setLanguage(data);
       setConsonantTags(data.phonemes.consonants || []);
       setVowelTags(data.phonemes.vowels || []);
+      setSyllableRules(data.syllable_rules || {});
       
       // Handle backward compatibility and new features structure
       const features = data.phonemes.features || {};
@@ -196,7 +201,13 @@ export default function LanguageDetail() {
       currentConsonantAlphabet.trim() &&
       !consonantTags.includes(currentConsonant.trim())
     ) {
-      const newTags = [...consonantTags, currentConsonant.trim()];
+      // Remove old mapping if alphabet key already exists
+      const existingIPA = consonantMappings[currentConsonantAlphabet.trim()];
+      let newTags = existingIPA 
+        ? consonantTags.filter(t => t !== existingIPA)
+        : [...consonantTags];
+      
+      newTags.push(currentConsonant.trim());
       const newMappings = {
         ...consonantMappings,
         [currentConsonantAlphabet.trim()]: currentConsonant.trim(),
@@ -227,11 +238,21 @@ export default function LanguageDetail() {
       currentVowelAlphabet.trim() &&
       !vowelTags.includes(currentVowel.trim())
     ) {
-      let newTags = [...vowelTags, currentVowel.trim()];
+      // Remove old mapping if alphabet key already exists
+      const existingIPA = vowelMappings[currentVowelAlphabet.trim()];
+      let newTags = existingIPA 
+        ? vowelTags.filter(t => t !== existingIPA)
+        : [...vowelTags];
+      
+      newTags.push(currentVowel.trim());
       let newMappings = { ...vowelMappings, [currentVowelAlphabet.trim()]: currentVowel.trim() };
       
       // Add long vowel if specified
       if (vowelHasLong && currentVowelLong.trim() && currentVowelLongAlphabet.trim()) {
+        const existingLongIPA = vowelMappings[currentVowelLongAlphabet.trim()];
+        if (existingLongIPA) {
+          newTags = newTags.filter(t => t !== existingLongIPA);
+        }
         newTags.push(currentVowelLong.trim());
         newMappings[currentVowelLongAlphabet.trim()] = currentVowelLong.trim();
       }
@@ -262,7 +283,13 @@ export default function LanguageDetail() {
     const currentAlphabet = currentFeatureAlphabet[featureKey]?.trim();
     
     if (current && currentAlphabet && !(featureTags[featureKey] || []).includes(current)) {
-      let newTags = [...(featureTags[featureKey] || []), current];
+      // Remove old mapping if alphabet key already exists
+      const existingIPA = featureMappings[featureKey]?.[currentAlphabet];
+      let newTags = existingIPA 
+        ? (featureTags[featureKey] || []).filter(t => t !== existingIPA)
+        : [...(featureTags[featureKey] || [])];
+      
+      newTags.push(current);
       let newMappings = {
         ...(featureMappings[featureKey] || {}),
         [currentAlphabet]: current,
@@ -273,6 +300,10 @@ export default function LanguageDetail() {
           featureHasLong[featureKey] && 
           currentFeatureLong[featureKey]?.trim() && 
           currentFeatureLongAlphabet[featureKey]?.trim()) {
+        const existingLongIPA = featureMappings[featureKey]?.[currentFeatureLongAlphabet[featureKey].trim()];
+        if (existingLongIPA) {
+          newTags = newTags.filter(t => t !== existingLongIPA);
+        }
         newTags.push(currentFeatureLong[featureKey].trim());
         newMappings[currentFeatureLongAlphabet[featureKey].trim()] = currentFeatureLong[featureKey].trim();
       }
@@ -318,6 +349,7 @@ export default function LanguageDetail() {
           features: featureMappings,
         },
         syllables: data.syllables,
+        syllable_rules: syllableRules,
         rules: data.rules || '',
       };
 
@@ -396,6 +428,18 @@ export default function LanguageDetail() {
                 Edit Language
               </Button>
             )}
+            {isEditing && (
+              <Button
+                onClick={() => {
+                  setIsEditing(false);
+                  loadLanguage();
+                }}
+                variant="outline"
+                className="border-2 border-[#DDBCEE] text-slate-600 hover:bg-[#DDBCEE]/20 rounded-full"
+              >
+                Cancel Edit
+              </Button>
+            )}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
@@ -452,8 +496,14 @@ export default function LanguageDetail() {
                   <span className="font-bold text-slate-800 text-lg">{vowelTags.length}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Features:</span>
+                  <span className="text-slate-500">Special Features:</span>
                   <span className="font-bold text-slate-800 text-lg">{Object.keys(featureTags).length}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Special Phonemes:</span>
+                  <span className="font-bold text-slate-800 text-lg">
+                    {Object.values(featureTags).reduce((acc, arr) => acc + arr.length, 0)}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -535,7 +585,7 @@ export default function LanguageDetail() {
 
                   <Tabs defaultValue="consonants" className="w-full">
                     <div className="w-full overflow-x-auto pb-2">
-                      <TabsList className="flex w-max min-w-full bg-white/50 border-2 border-[#DDBCEE]/30 p-1 rounded-2xl">
+                      <TabsList className="flex w-max min-w-full bg-white/50 border-2 border-[#DDBCEE]/30 p-1 rounded-2xl feature-tabs-list">
                         <TabsTrigger
                           value="consonants"
                           className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#A1FBFC] data-[state=active]:to-[#748BF6] data-[state=active]:text-white text-slate-500 rounded-xl font-semibold transition-all whitespace-nowrap px-4 flex-1"
@@ -561,15 +611,32 @@ export default function LanguageDetail() {
                         {selectedFeatures.map(featureKey => {
                           const feature = AVAILABLE_FEATURES.find(f => f.key === featureKey);
                           const count = featureTags[featureKey]?.length || 0;
+                          const color = getFeatureColor(featureKey);
+                          
+                          // Create dynamic Tailwind classes for this specific feature
+                          const activeClasses = `data-[state=active]:text-white text-slate-500 rounded-xl font-semibold transition-all whitespace-nowrap px-4 flex-1`;
+                          
                           return (
                             <TabsTrigger
                               key={featureKey}
                               value={featureKey}
-                              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#F5B485] data-[state=active]:to-[#F269BF] data-[state=active]:text-white text-slate-500 rounded-xl font-semibold transition-all whitespace-nowrap px-4 flex-1"
+                              className={activeClasses}
+                              style={{
+                                '--active-bg-from': color.from,
+                                '--active-bg-to': color.to,
+                              } as React.CSSProperties}
+                              data-feature-key={featureKey}
                             >
                               {feature?.label}
                               {count > 0 && (
-                                <Badge className="ml-2 bg-[#F5B485]/30 text-[#F269BF] border-0 font-bold">
+                                <Badge 
+                                  className="ml-2 border-0 font-bold"
+                                  data-feature-badge={featureKey}
+                                  style={{
+                                    backgroundColor: `${color.from}40`,
+                                    color: color.from
+                                  }}
+                                >
                                   {count}
                                 </Badge>
                               )}
@@ -578,6 +645,25 @@ export default function LanguageDetail() {
                         })}
                       </TabsList>
                     </div>
+                    <style>{`
+                      ${selectedFeatures.map(featureKey => {
+                        const color = getFeatureColor(featureKey);
+                        return `
+                          /* Use data attribute for more specific targeting */
+                          .feature-tabs-list button[data-feature-key="${featureKey}"][data-state="active"] {
+                            background: linear-gradient(to right, var(--active-bg-from), var(--active-bg-to)) !important;
+                            color: white !important;
+                            border-color: transparent !important;
+                          }
+                          
+                          /* Badge styling for active tabs */
+                          .feature-tabs-list button[data-feature-key="${featureKey}"][data-state="active"] [data-feature-badge="${featureKey}"] {
+                            background-color: rgba(255, 255, 255, 0.3) !important;
+                            color: white !important;
+                          }
+                        `;
+                      }).join('')}
+                    `}</style>
 
                     <TabsContent value="consonants" className="space-y-5 mt-6">
                       <FormField
@@ -633,14 +719,21 @@ export default function LanguageDetail() {
                                 return (
                                   <Badge
                                     key={tag}
-                                    className="px-3 py-1.5 bg-[#A1FBFC]/30 text-[#748BF6] border-2 border-[#A1FBFC]/50 hover:bg-[#A1FBFC]/50 rounded-full font-semibold"
+                                    className="px-3 py-1.5 bg-[#A1FBFC]/30 text-[#748BF6] border-2 border-[#A1FBFC]/50 hover:bg-[#A1FBFC]/50 rounded-full font-semibold cursor-pointer"
+                                    onClick={() => {
+                                      setCurrentConsonantAlphabet(alphabetKey || '');
+                                      setCurrentConsonant(tag);
+                                    }}
                                   >
                                     <span className="font-mono">
                                       {alphabetKey ? `${alphabetKey} → ${tag}` : tag}
                                     </span>
                                     <button
                                       type="button"
-                                      onClick={() => removeConsonant(tag)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeConsonant(tag);
+                                      }}
                                       className="ml-2 hover:text-red-500 transition-colors"
                                     >
                                       <X className="h-3.5 w-3.5" />
@@ -747,14 +840,21 @@ export default function LanguageDetail() {
                                 return (
                                   <Badge
                                     key={tag}
-                                    className="px-3 py-1.5 bg-[#DDBCEE]/30 text-[#F269BF] border-2 border-[#DDBCEE]/50 hover:bg-[#DDBCEE]/50 rounded-full font-semibold"
+                                    className="px-3 py-1.5 bg-[#DDBCEE]/30 text-[#F269BF] border-2 border-[#DDBCEE]/50 hover:bg-[#DDBCEE]/50 rounded-full font-semibold cursor-pointer"
+                                    onClick={() => {
+                                      setCurrentVowelAlphabet(alphabetKey || '');
+                                      setCurrentVowel(tag);
+                                    }}
                                   >
                                     <span className="font-mono">
                                       {alphabetKey ? `${alphabetKey} → ${tag}` : tag}
                                     </span>
                                     <button
                                       type="button"
-                                      onClick={() => removeVowel(tag)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeVowel(tag);
+                                      }}
                                       className="ml-2 hover:text-red-500 transition-colors"
                                     >
                                       <X className="h-3.5 w-3.5" />
@@ -773,6 +873,7 @@ export default function LanguageDetail() {
                       const feature = AVAILABLE_FEATURES.find(f => f.key === featureKey);
                       const tags = featureTags[featureKey] || [];
                       const mappings = featureMappings[featureKey] || {};
+                      const color = getFeatureColor(featureKey);
                       
                       return (
                         <TabsContent key={featureKey} value={featureKey} className="space-y-4 mt-6">
@@ -848,7 +949,10 @@ export default function LanguageDetail() {
                               <Button
                                 type="button"
                                 onClick={() => addFeature(featureKey)}
-                                className="w-full bg-gradient-to-r from-[#F5B485] to-[#F269BF] hover:opacity-90 text-white font-bold rounded-xl h-10"
+                                className="w-full text-white font-bold rounded-xl h-10"
+                                style={{
+                                  backgroundImage: `linear-gradient(to right, ${color.from}, ${color.to})`,
+                                }}
                               >
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add {feature?.label}
@@ -865,14 +969,25 @@ export default function LanguageDetail() {
                                 return (
                                   <Badge
                                     key={tag}
-                                    className="px-3 py-1.5 bg-[#F5B485]/30 text-[#F269BF] border-2 border-[#F5B485]/50 hover:bg-[#F5B485]/50 rounded-full font-semibold"
+                                    className="px-3 py-1.5 text-white border-2 hover:opacity-80 rounded-full font-semibold cursor-pointer"
+                                    style={{
+                                      backgroundImage: `linear-gradient(to right, ${color.from}, ${color.to})`,
+                                      borderColor: `${color.border}80`,
+                                    }}
+                                    onClick={() => {
+                                      setCurrentFeatureAlphabet(prev => ({ ...prev, [featureKey]: alphabetKey || '' }));
+                                      setCurrentFeature(prev => ({ ...prev, [featureKey]: tag }));
+                                    }}
                                   >
                                     <span className="font-mono">
                                       {alphabetKey} → {tag}
                                     </span>
                                     <button
                                       type="button"
-                                      onClick={() => removeFeature(featureKey, tag)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeFeature(featureKey, tag);
+                                      }}
                                       className="ml-2 hover:text-red-500 transition-colors"
                                     >
                                       <X className="h-3.5 w-3.5" />
@@ -909,6 +1024,14 @@ export default function LanguageDetail() {
                         <FormMessage className="text-red-500 text-xs" />
                       </FormItem>
                     )}
+                  />
+
+                  <SyllableRulesSelector
+                    consonantMappings={consonantMappings}
+                    vowelMappings={vowelMappings}
+                    featureMappings={featureMappings}
+                    syllableRules={syllableRules}
+                    onRulesChange={setSyllableRules}
                   />
 
                   <FormField

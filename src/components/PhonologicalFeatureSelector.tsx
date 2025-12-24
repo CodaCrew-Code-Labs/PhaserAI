@@ -13,7 +13,6 @@ export const AVAILABLE_FEATURES: PhonologicalFeature[] = [
   { key: 'diphthongs', label: 'Diphthongs', description: 'Two vowel sounds in one syllable' },
   { key: 'affricates', label: 'Affricates', description: 'Stop + fricative combinations' },
   { key: 'ejectives', label: 'Ejectives', description: 'Consonants with glottal closure' },
-  { key: 'semivowels', label: 'Semivowels', description: 'Sounds between vowels and consonants' },
   { key: 'glides', label: 'Glides', description: 'Transitional sounds between phonemes' },
 ];
 
