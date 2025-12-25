@@ -192,6 +192,8 @@ export default function LanguageDetail() {
       setConsonantTags(data.phonemes.consonants || []);
       setVowelTags(data.phonemes.vowels || []);
       setSyllableRules(data.syllable_rules || {});
+      console.log('Loaded syllable_rules:', data.syllable_rules);
+      console.log('Syllable rules keys:', Object.keys(data.syllable_rules || {}));
       
       // Handle backward compatibility and new features structure
       const features = data.phonemes.features || {};
@@ -1304,6 +1306,35 @@ export default function LanguageDetail() {
                     {language.syllables}
                   </Badge>
                 </div>
+
+                {language.syllable_rules && Object.keys(language.syllable_rules).length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3 text-slate-800">Syllable Rules</h3>
+                    <div className="space-y-3">
+                      {Object.entries(language.syllable_rules).map(([position, rules]) => {
+                        if (!rules || rules.length === 0) return null;
+                        const colors = {
+                          onset: { bg: 'bg-[#A1FBFC]/20', border: 'border-[#A1FBFC]', text: 'text-[#748BF6]' },
+                          nucleus: { bg: 'bg-[#DDBCEE]/20', border: 'border-[#DDBCEE]', text: 'text-[#F269BF]' },
+                          coda: { bg: 'bg-[#F5B485]/20', border: 'border-[#F5B485]', text: 'text-[#F5B485]' },
+                        };
+                        const color = colors[position as keyof typeof colors] || colors.onset;
+                        return (
+                          <div key={position} className={`flex items-center gap-3 p-3 ${color.bg} border-2 ${color.border} rounded-xl`}>
+                            <span className={`font-semibold ${color.text} text-sm capitalize w-20`}>{position}:</span>
+                            <div className="flex flex-wrap gap-2">
+                              {rules.map((rule, idx) => (
+                                <Badge key={idx} className={`${color.text} bg-white border-2 ${color.border}`}>
+                                  {rule.replace('group:', '').split(':').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {language.rules && (
                   <div>

@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS app_8b514_languages (
   phonemes JSONB NOT NULL DEFAULT '{"consonants":[],"vowels":[],"diphthongs":[]}'::jsonb,
   alphabet_mappings JSONB NOT NULL DEFAULT '{"consonants":{},"vowels":{},"diphthongs":{}}'::jsonb,
   syllables TEXT NOT NULL DEFAULT 'CV',
+  syllable_rules JSONB DEFAULT '{}'::jsonb,
   rules TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );

@@ -132,6 +132,11 @@ class MigrationRunner {
         version: '20250103_091500',
         description: 'Add user preferences table',
         sql: this.getUserPreferencesMigration()
+      },
+      {
+        version: '20250104_100000',
+        description: 'Add syllable_rules column',
+        sql: this.getSyllableRulesMigration()
       }
     ];
   }
@@ -270,6 +275,7 @@ CREATE TABLE IF NOT EXISTS app_8b514_languages (
     phonemes JSONB NOT NULL DEFAULT '{"consonants":[],"vowels":[],"diphthongs":[]}'::jsonb,
     alphabet_mappings JSONB NOT NULL DEFAULT '{"consonants":{},"vowels":{},"diphthongs":{}}'::jsonb,
     syllables TEXT NOT NULL DEFAULT 'CV',
+    syllable_rules JSONB DEFAULT '{}'::jsonb,
     rules TEXT NOT NULL DEFAULT '',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
@@ -358,6 +364,17 @@ CREATE TABLE IF NOT EXISTS app_8b514_user_preferences (
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON app_8b514_user_preferences(user_id);
+
+COMMIT;
+    `;
+  }
+
+  private getSyllableRulesMigration(): string {
+    return `
+BEGIN;
+
+ALTER TABLE app_8b514_languages 
+ADD COLUMN IF NOT EXISTS syllable_rules JSONB DEFAULT '{}'::jsonb;
 
 COMMIT;
     `;

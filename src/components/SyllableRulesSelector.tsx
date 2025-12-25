@@ -73,39 +73,24 @@ export function SyllableRulesSelector({
 
   const getAvailableOptions = (posKey: string) => {
     if (posKey === 'nucleus') {
-      // Nucleus: vowels + diphthongs + semivowels (if they exist)
-      const vowelAlphabets = Object.keys(vowelMappings || {});
-      const diphthongAlphabets = Object.keys(featureMappings?.diphthongs || {});
-      const semivowelAlphabets = Object.keys(featureMappings?.semivowels || {});
-      
+      // Nucleus: vowels + diphthongs only
       const groups = [
-        { key: 'group:vowels', label: 'All Vowels' },
-        ...(diphthongAlphabets.length > 0 ? [{ key: 'group:diphthongs', label: 'All Diphthongs' }] : []),
-        ...(semivowelAlphabets.length > 0 ? [{ key: 'group:semivowels', label: 'All Semivowels' }] : []),
+        { key: 'group:vowels', label: 'Vowels' },
+        ...(Object.keys(featureMappings?.diphthongs || {}).length > 0 ? [{ key: 'group:diphthongs', label: 'Diphthongs' }] : []),
       ];
       
-      return {
-        groups,
-        alphabets: [...vowelAlphabets, ...diphthongAlphabets, ...semivowelAlphabets],
-      };
+      return { groups };
     } else {
-      // Onset/Coda: consonants + all special features + semivowels
-      const consonantAlphabets = Object.keys(consonantMappings || {});
-      const featureAlphabets = Object.values(featureMappings || {})
-        .filter((_, idx) => Object.keys(featureMappings || {})[idx] !== 'diphthongs')
-        .flatMap(m => Object.keys(m || {}));
-      
+      // Onset/Coda: consonants + all other features
       const groups = [
-        { key: 'group:consonants', label: 'All Consonants' },
+        { key: 'group:consonants', label: 'Consonants' },
         ...Object.keys(featureMappings || {})
           .filter(k => k !== 'diphthongs')
+          .filter(k => Object.keys(featureMappings[k] || {}).length > 0)
           .map(k => ({ key: `group:${k}`, label: k.charAt(0).toUpperCase() + k.slice(1) }))
       ];
       
-      return {
-        groups,
-        alphabets: [...consonantAlphabets, ...featureAlphabets],
-      };
+      return { groups };
     }
   };
 
@@ -119,71 +104,35 @@ export function SyllableRulesSelector({
     <Card className="bg-white/50 border-2 border-[#F5B485]/30 rounded-2xl">
       <CardHeader>
         <CardTitle className="text-slate-700 font-medium text-sm">
-          Syllable Rules (Required)
+          Syllable Rules
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         {SYLLABLE_POSITIONS.map(pos => {
           const options = getAvailableOptions(pos.key);
           const selected = syllableRules[pos.key] || [];
-          const hiddenAlphabets = getHiddenAlphabets(selected);
-          const visibleAlphabets = options.alphabets.filter(alpha => !hiddenAlphabets.includes(alpha));
           
           return (
-            <div key={pos.key} className="p-4 bg-white rounded-xl border-2 border-[#F5B485]/20">
-              <div className="mb-3">
-                <h4 className="font-semibold text-slate-700">{pos.label}</h4>
-                <p className="text-xs text-slate-500">{pos.description}</p>
+            <div key={pos.key} className="flex items-center gap-3">
+              <div className="w-24 shrink-0">
+                <h4 className="font-semibold text-slate-700 text-sm">{pos.label}</h4>
+                <p className="text-xs text-slate-400">{pos.description}</p>
               </div>
               
-              <div className="space-y-3">
-                {/* Group options */}
-                <div>
-                  <p className="text-xs text-slate-500 mb-2">Phoneme Groups:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {options.groups.map(group => (
-                      <div key={group.key} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`${pos.key}-${group.key}`}
-                          checked={selected.includes(group.key)}
-                          onCheckedChange={() => toggleRule(pos.key, group.key)}
-                        />
-                        <label htmlFor={`${pos.key}-${group.key}`} className="text-sm cursor-pointer">
-                          {group.label}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Individual alphabets */}
-                {visibleAlphabets.length > 0 && (
-                  <div>
-                    <p className="text-xs text-slate-500 mb-2">Individual Letters:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {visibleAlphabets.map(alpha => (
-                        <Badge
-                          key={alpha}
-                          onClick={() => toggleRule(pos.key, alpha)}
-                          className={`cursor-pointer ${
-                            selected.includes(alpha)
-                              ? 'bg-[#F5B485] text-white'
-                              : 'bg-slate-200 text-slate-600'
-                          }`}
-                        >
-                          {alpha}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Selected summary */}
-                {selected.length > 0 && (
-                  <div className="pt-2 border-t border-slate-200">
-                    <p className="text-xs text-slate-500">Selected: {selected.length} rule(s)</p>
-                  </div>
-                )}
+              <div className="flex flex-wrap gap-2 flex-1">
+                {options.groups.map(group => (
+                  <Badge
+                    key={group.key}
+                    onClick={() => toggleRule(pos.key, group.key)}
+                    className={`cursor-pointer transition-all ${
+                      selected.includes(group.key)
+                        ? 'bg-[#F5B485] text-white hover:bg-[#F5B485]/80'
+                        : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                    }`}
+                  >
+                    {group.label}
+                  </Badge>
+                ))}
               </div>
             </div>
           );

@@ -26,6 +26,7 @@ export interface Language {
     diphthongs: { [key: string]: string };
   };
   syllables: string;
+  syllable_rules?: { [key: string]: string[] };
   rules: string;
   created_at: string;
 }
