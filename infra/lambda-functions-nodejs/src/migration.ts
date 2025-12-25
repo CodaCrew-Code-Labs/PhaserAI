@@ -137,6 +137,11 @@ class MigrationRunner {
         version: '20250104_100000',
         description: 'Add syllable_rules column',
         sql: this.getSyllableRulesMigration()
+      },
+      {
+        version: '20250105_140000',
+        description: 'Add exclusion_rules column',
+        sql: this.getExclusionRulesMigration()
       }
     ];
   }
@@ -375,6 +380,17 @@ BEGIN;
 
 ALTER TABLE app_8b514_languages 
 ADD COLUMN IF NOT EXISTS syllable_rules JSONB DEFAULT '{}'::jsonb;
+
+COMMIT;
+    `;
+  }
+
+  private getExclusionRulesMigration(): string {
+    return `
+BEGIN;
+
+ALTER TABLE app_8b514_languages 
+ADD COLUMN IF NOT EXISTS exclusion_rules JSONB DEFAULT '[]'::jsonb;
 
 COMMIT;
     `;

@@ -82,15 +82,10 @@ async function getLanguage(languageId: string, userId?: string): Promise<APIGate
     return lambdaResponse(404, { error: 'Language not found' });
   }
 
-  console.log('GET LANGUAGE - Result:', JSON.stringify(result[0]));
-  console.log('GET LANGUAGE - syllable_rules:', JSON.stringify(result[0].syllable_rules));
-
   return lambdaResponse(200, result[0]);
 }
 
 async function createLanguage(languageData: any): Promise<APIGatewayProxyResult> {
-  console.log('CREATE LANGUAGE - Received data:', JSON.stringify(languageData));
-  
   const requiredFields = ['user_id', 'name'];
 
   for (const field of requiredFields) {
@@ -111,13 +106,12 @@ async function createLanguage(languageData: any): Promise<APIGatewayProxyResult>
   };
   const syllables = languageData.syllables || 'CV';
   const syllableRules = languageData.syllable_rules || {};
+  const exclusionRules = languageData.exclusion_rules || [];
   const rules = languageData.rules || '';
 
-  console.log('CREATE LANGUAGE - syllable_rules:', JSON.stringify(syllableRules));
-
   const query = `
-    INSERT INTO app_8b514_languages (user_id, name, phonemes, alphabet_mappings, syllables, syllable_rules, rules)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    INSERT INTO app_8b514_languages (user_id, name, phonemes, alphabet_mappings, syllables, syllable_rules, exclusion_rules, rules)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     RETURNING *
   `;
 
@@ -128,16 +122,14 @@ async function createLanguage(languageData: any): Promise<APIGatewayProxyResult>
     JSON.stringify(alphabetMappings),
     syllables,
     JSON.stringify(syllableRules),
+    JSON.stringify(exclusionRules),
     rules
   ]);
 
-  console.log('CREATE LANGUAGE - Result:', JSON.stringify(result[0]));
   return lambdaResponse(201, result[0]);
 }
 
 async function updateLanguage(languageId: string, languageData: any): Promise<APIGatewayProxyResult> {
-  console.log('UPDATE LANGUAGE - Received data:', JSON.stringify(languageData));
-  
   if (!languageId) {
     return lambdaResponse(400, { error: 'Language ID is required' });
   }
@@ -169,6 +161,11 @@ async function updateLanguage(languageId: string, languageData: any): Promise<AP
   if (languageData.syllable_rules !== undefined) {
     updateFields.push(`syllable_rules = $${paramIndex++}`);
     params.push(JSON.stringify(languageData.syllable_rules));
+  }
+
+  if (languageData.exclusion_rules !== undefined) {
+    updateFields.push(`exclusion_rules = $${paramIndex++}`);
+    params.push(JSON.stringify(languageData.exclusion_rules));
   }
 
   if (languageData.rules !== undefined) {

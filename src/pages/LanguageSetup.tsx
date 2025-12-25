@@ -25,10 +25,11 @@ import { toast } from 'sonner';
 import { ArrowLeft, Plus, X, Save, Sparkles, AlertCircle, Star, Heart } from 'lucide-react';
 import { PhonologicalFeatureSelector, AVAILABLE_FEATURES } from '@/components/PhonologicalFeatureSelector';
 import { SyllableRulesSelector } from '@/components/SyllableRulesSelector';
+import { ExclusionRulesSelector } from '@/components/ExclusionRulesSelector';
 import { getFeatureColor } from '@/lib/feature-colors';
 
 const languageSchema = z.object({
-  name: z.string().min(1, 'Language name is required').max(100),
+  name: z.string().min(1, 'Language name is required').max(100, 'Language name must be less than 100 characters'),
   consonants: z.string().min(1, 'At least one consonant is required'),
   vowels: z.string().min(1, 'At least one vowel is required'),
   syllables: z.string().min(1, 'Syllable structure is required'),
@@ -62,6 +63,7 @@ export default function LanguageSetup() {
   const [currentFeatureLongAlphabet, setCurrentFeatureLongAlphabet] = useState<{ [key: string]: string }>({});
   const [featureHasLong, setFeatureHasLong] = useState<{ [key: string]: boolean }>({});
   const [syllableRules, setSyllableRules] = useState<{ [key: string]: string[] }>({});
+  const [exclusionRules, setExclusionRules] = useState<any[]>([]);
   const [vowelPairs, setVowelPairs] = useState<Map<string, { short: string, long: string }>>(new Map());
   const [featurePairs, setFeaturePairs] = useState<{ [key: string]: Map<string, { short: string, long: string }> }>({});
 
@@ -260,12 +262,14 @@ export default function LanguageSetup() {
         consonants: consonantTags,
         vowels: vowelTags,
         features: featureTags,
+        diphthongs: featureTags.diphthongs || [], // For backward compatibility
       };
       
       const alphabetMappings = {
         consonants: consonantMappings,
         vowels: vowelMappings,
         features: featureMappings,
+        diphthongs: featureMappings.diphthongs || {}, // For backward compatibility
       };
 
       await api.createLanguage({
@@ -911,14 +915,23 @@ export default function LanguageSetup() {
                 />
 
                 <SyllableRulesSelector
-                  consonants={consonantTags}
-                  vowels={vowelTags}
-                  features={featureTags}
                   consonantMappings={consonantMappings}
                   vowelMappings={vowelMappings}
                   featureMappings={featureMappings}
                   syllableRules={syllableRules}
+                  exclusionRules={exclusionRules}
                   onRulesChange={setSyllableRules}
+                  onExclusionRulesChange={setExclusionRules}
+                />
+
+                <ExclusionRulesSelector
+                  syllableStructure={form.watch('syllables')}
+                  consonantMappings={consonantMappings}
+                  vowelMappings={vowelMappings}
+                  featureMappings={featureMappings}
+                  syllableRules={syllableRules}
+                  exclusionRules={exclusionRules}
+                  onRulesChange={setExclusionRules}
                 />
 
                 <FormField
@@ -927,7 +940,7 @@ export default function LanguageSetup() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-slate-700 font-medium">
-                        Phonotactic Rules (Optional)
+                        Other Phonotactic rules (If any)
                       </FormLabel>
                       <FormControl>
                         <Textarea
@@ -937,7 +950,7 @@ export default function LanguageSetup() {
                         />
                       </FormControl>
                       <FormDescription className="text-slate-500 text-xs">
-                        Describe any phonological constraints or rules for your language
+                        Its intended for AI validation
                       </FormDescription>
                       <FormMessage className="text-red-500 text-xs" />
                     </FormItem>

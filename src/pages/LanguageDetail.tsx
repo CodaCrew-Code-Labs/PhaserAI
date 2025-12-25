@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { PhonologicalFeatureSelector, AVAILABLE_FEATURES } from '@/components/PhonologicalFeatureSelector';
 import { SyllableRulesSelector } from '@/components/SyllableRulesSelector';
+import { ExclusionRulesSelector } from '@/components/ExclusionRulesSelector';
 import { getFeatureColor } from '@/lib/feature-colors';
 import {
   AlertDialog,
@@ -51,7 +52,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const languageSchema = z.object({
-  name: z.string().min(1, 'Language name is required').max(100),
+  name: z.string().min(1, 'Language name is required').max(100, 'Language name must be less than 100 characters'),
   consonants: z.string().min(1, 'At least one consonant is required'),
   vowels: z.string().min(1, 'At least one vowel is required'),
   syllables: z.string().min(1, 'Syllable structure is required'),
@@ -78,6 +79,7 @@ interface Language {
   };
   syllables: string;
   syllable_rules?: { [key: string]: string[] };
+  exclusion_rules?: any[];
   rules: string;
   created_at: string;
 }
@@ -111,6 +113,7 @@ export default function LanguageDetail() {
   const [featureHasLong, setFeatureHasLong] = useState<{ [key: string]: boolean }>({});
   const [wordCount, setWordCount] = useState(0);
   const [syllableRules, setSyllableRules] = useState<{ [key: string]: string[] }>({});
+  const [exclusionRules, setExclusionRules] = useState<any[]>([]);
   const [vowelPairs, setVowelPairs] = useState<Map<string, { short: string, long: string }>>(new Map());
   const [featurePairs, setFeaturePairs] = useState<{ [key: string]: Map<string, { short: string, long: string }> }>({});
 
@@ -192,13 +195,12 @@ export default function LanguageDetail() {
       setConsonantTags(data.phonemes.consonants || []);
       setVowelTags(data.phonemes.vowels || []);
       setSyllableRules(data.syllable_rules || {});
-      console.log('Loaded syllable_rules:', data.syllable_rules);
-      console.log('Syllable rules keys:', Object.keys(data.syllable_rules || {}));
+      setExclusionRules((data as any).exclusion_rules || []);
       
       // Handle backward compatibility and new features structure
-      const features = data.phonemes.features || {};
-      if (data.phonemes.diphthongs) {
-        features.diphthongs = data.phonemes.diphthongs;
+      const features = (data.phonemes as any).features || {};
+      if ((data.phonemes as any).diphthongs) {
+        features.diphthongs = (data.phonemes as any).diphthongs;
       }
       setFeatureTags(features);
       setSelectedFeatures(Object.keys(features));
@@ -208,9 +210,9 @@ export default function LanguageDetail() {
         setConsonantMappings(data.alphabet_mappings.consonants || {});
         setVowelMappings(data.alphabet_mappings.vowels || {});
         
-        const featureMappings = data.alphabet_mappings.features || {};
-        if (data.alphabet_mappings.diphthongs) {
-          featureMappings.diphthongs = data.alphabet_mappings.diphthongs;
+        const featureMappings = (data.alphabet_mappings as any).features || {};
+        if ((data.alphabet_mappings as any).diphthongs) {
+          featureMappings.diphthongs = (data.alphabet_mappings as any).diphthongs;
         }
         setFeatureMappings(featureMappings);
       }
@@ -416,14 +418,17 @@ export default function LanguageDetail() {
           consonants: consonantTags,
           vowels: vowelTags,
           features: featureTags,
+          diphthongs: featureTags.diphthongs || [], // For backward compatibility
         },
         alphabet_mappings: {
           consonants: consonantMappings,
           vowels: vowelMappings,
           features: featureMappings,
+          diphthongs: featureMappings.diphthongs || {}, // For backward compatibility
         },
         syllables: data.syllables,
         syllable_rules: syllableRules,
+        exclusion_rules: exclusionRules,
         rules: data.rules || '',
       };
 
@@ -1202,7 +1207,20 @@ export default function LanguageDetail() {
                     vowelMappings={vowelMappings}
                     featureMappings={featureMappings}
                     syllableRules={syllableRules}
+                    exclusionRules={exclusionRules}
                     onRulesChange={setSyllableRules}
+                    onExclusionRulesChange={setExclusionRules}
+                  />
+
+                  <ExclusionRulesSelector
+                    key={`exclusion-rules-${form.watch('syllables') || 'empty'}`}
+                    syllableStructure={form.watch('syllables')}
+                    consonantMappings={consonantMappings}
+                    vowelMappings={vowelMappings}
+                    featureMappings={featureMappings}
+                    syllableRules={syllableRules}
+                    exclusionRules={exclusionRules}
+                    onRulesChange={setExclusionRules}
                   />
 
                   <FormField
@@ -1211,7 +1229,7 @@ export default function LanguageDetail() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-slate-700 font-medium text-sm">
-                          Phonotactic Rules (Optional)
+                          Other Phonotactic rules (If any)
                         </FormLabel>
                         <FormControl>
                           <Textarea
@@ -1221,7 +1239,7 @@ export default function LanguageDetail() {
                           />
                         </FormControl>
                         <FormDescription className="text-slate-500 text-xs">
-                          Describe any phonological constraints or rules for your language
+                          Its intended for AI validation
                         </FormDescription>
                         <FormMessage className="text-red-500 text-xs" />
                       </FormItem>
@@ -1311,7 +1329,8 @@ export default function LanguageDetail() {
                   <div>
                     <h3 className="text-lg font-semibold mb-3 text-slate-800">Syllable Rules</h3>
                     <div className="space-y-3">
-                      {Object.entries(language.syllable_rules).map(([position, rules]) => {
+                      {['onset', 'nucleus', 'coda'].map(position => {
+                        const rules = language.syllable_rules?.[position];
                         if (!rules || rules.length === 0) return null;
                         const colors = {
                           onset: { bg: 'bg-[#A1FBFC]/20', border: 'border-[#A1FBFC]', text: 'text-[#748BF6]' },
@@ -1332,6 +1351,42 @@ export default function LanguageDetail() {
                           </div>
                         );
                       })}
+                    </div>
+                  </div>
+                )}
+
+                {(language as any).exclusion_rules && (language as any).exclusion_rules.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3 text-slate-800">Exclusion Rules</h3>
+                    <p className="text-sm text-slate-500 mb-4">
+                      Alphabets that cannot appear in specific syllable positions
+                    </p>
+                    <div className="space-y-3">
+                      {(language as any).exclusion_rules.map((rule: any, idx: number) => (
+                        <div
+                          key={rule.id || idx}
+                          className="flex items-center gap-3 p-4 bg-gradient-to-r from-[#F269BF]/10 to-[#DDBCEE]/10 border-2 border-[#F269BF]/20 rounded-xl"
+                        >
+                          <div className="flex flex-wrap gap-1">
+                            {rule.syllablePatterns?.map((pattern: string, patternIdx: number) => (
+                              <Badge key={patternIdx} className="bg-[#F269BF]/20 text-[#F269BF] border-0 font-mono">
+                                {pattern}
+                              </Badge>
+                            ))}
+                          </div>
+                          <Badge className="bg-[#DDBCEE]/20 text-[#DDBCEE] border-0 font-semibold">
+                            {rule.position}
+                          </Badge>
+                          <span className="text-slate-500 text-sm">excludes:</span>
+                          <div className="flex-1 flex flex-wrap gap-1">
+                            {rule.excludedAlphabets?.map((alpha: string, alphaIdx: number) => (
+                              <Badge key={alphaIdx} className="bg-red-100 text-red-600 border border-red-200 text-xs">
+                                {alpha}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
