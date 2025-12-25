@@ -130,6 +130,63 @@ class ApiClient {
     const word = await this.getWord(wordId);
     return word?.violations || [];
   }
+
+  // IPA Text-to-Speech
+  async synthesizeIPA(ipaText: string): Promise<Blob> {
+    console.log('Making API request to:', `${API_URL}/synthesize-ipa`);
+    
+    const response = await fetch(`${API_URL}/synthesize-ipa`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ipaText }),
+    });
+
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP ${response.status}`);
+    }
+
+    // Parse JSON response
+    const data = await response.json();
+    console.log('Response data:', { success: data.success, size: data.size });
+
+    if (!data.success || !data.audioUrl) {
+      throw new Error(data.error || 'Invalid response format');
+    }
+
+    // Convert data URL to blob
+    const dataUrl = data.audioUrl;
+    console.log('Data URL prefix:', dataUrl.substring(0, 50) + '...');
+    
+    // Extract base64 data from data URL
+    const base64Data = dataUrl.split(',')[1];
+    if (!base64Data) {
+      throw new Error('Invalid data URL format');
+    }
+
+    // Convert base64 to binary
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    // Create blob
+    const blob = new Blob([bytes], { type: 'audio/mpeg' });
+    console.log('Created blob size:', blob.size, 'type:', blob.type);
+    
+    // Validate that we got a proper audio blob
+    if (blob.size === 0) {
+      throw new Error('Received empty audio data');
+    }
+
+    return blob;
+  }
 }
 
 export const api = new ApiClient();

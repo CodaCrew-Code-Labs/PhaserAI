@@ -26,6 +26,7 @@ import { ArrowLeft, Plus, X, Save, Sparkles, AlertCircle, Star, Heart } from 'lu
 import { PhonologicalFeatureSelector, AVAILABLE_FEATURES } from '@/components/PhonologicalFeatureSelector';
 import { SyllableRulesSelector } from '@/components/SyllableRulesSelector';
 import { ExclusionRulesSelector } from '@/components/ExclusionRulesSelector';
+import { IPAInput } from '@/components/IPAInput';
 import { getFeatureColor } from '@/lib/feature-colors';
 
 const languageSchema = z.object({
@@ -478,10 +479,10 @@ export default function LanguageSetup() {
                                 />
                               </FormControl>
                               <FormControl>
-                                <Input
+                                <IPAInput
                                   placeholder="IPA (e.g., p, θ, ʃ)"
                                   value={currentConsonant}
-                                  onChange={(e) => setCurrentConsonant(e.target.value)}
+                                  onChange={setCurrentConsonant}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                       e.preventDefault();
@@ -573,10 +574,10 @@ export default function LanguageSetup() {
                                 />
                               </FormControl>
                               <FormControl>
-                                <Input
+                                <IPAInput
                                   placeholder="IPA (e.g., a, e, i)"
                                   value={currentVowel}
-                                  onChange={(e) => setCurrentVowel(e.target.value)}
+                                  onChange={setCurrentVowel}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                       e.preventDefault();
@@ -598,10 +599,10 @@ export default function LanguageSetup() {
                                   />
                                 </FormControl>
                                 <FormControl>
-                                  <Input
+                                  <IPAInput
                                     placeholder="Long IPA (e.g., aː, eː, iː)"
                                     value={currentVowelLong}
-                                    onChange={(e) => setCurrentVowelLong(e.target.value)}
+                                    onChange={setCurrentVowelLong}
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') {
                                         e.preventDefault();
@@ -745,10 +746,10 @@ export default function LanguageSetup() {
                                   />
                                 </FormControl>
                                 <FormControl>
-                                  <Input
+                                  <IPAInput
                                     placeholder={`IPA (e.g., ${featureKey === 'diphthongs' ? 'ai, au, oi' : 'IPA symbols'})`}
                                     value={currentFeature[featureKey] || ''}
-                                    onChange={(e) => setCurrentFeature(prev => ({ ...prev, [featureKey]: e.target.value }))}
+                                    onChange={(value) => setCurrentFeature(prev => ({ ...prev, [featureKey]: value }))}
                                     onKeyDown={(e) => {
                                       if (e.key === 'Enter') {
                                         e.preventDefault();
@@ -770,10 +771,10 @@ export default function LanguageSetup() {
                                     />
                                   </FormControl>
                                   <FormControl>
-                                    <Input
+                                    <IPAInput
                                       placeholder="Long IPA (e.g., aiː, auː, oiː)"
                                       value={currentFeatureLong[featureKey] || ''}
-                                      onChange={(e) => setCurrentFeatureLong(prev => ({ ...prev, [featureKey]: e.target.value }))}
+                                      onChange={(value) => setCurrentFeatureLong(prev => ({ ...prev, [featureKey]: value }))}
                                       onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                           e.preventDefault();

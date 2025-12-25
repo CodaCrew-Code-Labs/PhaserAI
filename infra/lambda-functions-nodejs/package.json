@@ -5,11 +5,13 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "package": "npm run build && mkdir -p temp-package && cp dist/*.js temp-package/ && cp -r node_modules temp-package/ && cp package.json temp-package/ && cd temp-package && zip -r ../lambda-package.zip . && cd .. && rm -rf temp-package"
   },
   "dependencies": {
     "pg": "^8.11.3",
-    "@aws-sdk/client-secrets-manager": "^3.490.0"
+    "@aws-sdk/client-secrets-manager": "^3.490.0",
+    "@aws-sdk/client-polly": "^3.490.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

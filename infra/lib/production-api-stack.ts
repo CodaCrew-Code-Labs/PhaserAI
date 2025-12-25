@@ -69,6 +69,15 @@ export class ProductionApiStack extends cdk.Stack {
       code: lambda.Code.fromAsset('lambda-functions-nodejs/lambda-package.zip'),
     });
 
+    // IPA Synthesis Lambda function (no database required)
+    const ipaSynthesisFunction = new lambda.Function(this, 'IPASynthesisFunction', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'synthesize-ipa.handler',
+      code: lambda.Code.fromAsset('lambda-functions-nodejs/lambda-package.zip'),
+      timeout: cdk.Duration.seconds(30),
+      logRetention: logs.RetentionDays.ONE_WEEK,
+    });
+
     // Add permissions to read from Secrets Manager
     const secretsPolicy = new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
@@ -79,6 +88,15 @@ export class ProductionApiStack extends cdk.Stack {
     usersFunction.addToRolePolicy(secretsPolicy);
     languagesFunction.addToRolePolicy(secretsPolicy);
     wordsFunction.addToRolePolicy(secretsPolicy);
+
+    // Add Polly permissions for IPA synthesis
+    const pollyPolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      actions: ['polly:SynthesizeSpeech'],
+      resources: ['*'],
+    });
+
+    ipaSynthesisFunction.addToRolePolicy(pollyPolicy);
 
     // Create API Gateway
     this.api = new apigateway.RestApi(this, 'PhaserAiProductionApi', {
@@ -132,6 +150,10 @@ export class ProductionApiStack extends cdk.Stack {
     // /languages/{languageId}/words resource
     const languageWordsResource = languageResource.addResource('words');
     languageWordsResource.addMethod('GET', new apigateway.LambdaIntegration(wordsFunction));
+
+    // /synthesize-ipa resource
+    const synthesizeIpaResource = this.api.root.addResource('synthesize-ipa');
+    synthesizeIpaResource.addMethod('POST', new apigateway.LambdaIntegration(ipaSynthesisFunction));
 
     // Outputs
     new cdk.CfnOutput(this, 'ApiUrl', {
