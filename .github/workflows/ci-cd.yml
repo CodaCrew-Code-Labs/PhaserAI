@@ -256,7 +256,7 @@ jobs:
           grep -r "Encrypted.*false" cdk.out/ --include="*.json" | head -5 || echo "✅ All encrypted"
       
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-artifacts
           path: |
