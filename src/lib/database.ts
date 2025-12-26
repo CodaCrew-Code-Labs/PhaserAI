@@ -15,6 +15,7 @@ export interface Language {
   id: string;
   user_id: string;
   name: string;
+  status?: 'active' | 'in_progress' | 'inactive' | 'dead';
   phonemes: {
     consonants: string[];
     vowels: string[];

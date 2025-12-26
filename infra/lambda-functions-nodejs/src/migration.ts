@@ -142,6 +142,11 @@ class MigrationRunner {
         version: '20250105_140000',
         description: 'Add exclusion_rules column',
         sql: this.getExclusionRulesMigration()
+      },
+      {
+        version: '20250126_140000',
+        description: 'Add language status column',
+        sql: this.getLanguageStatusMigration()
       }
     ];
   }
@@ -391,6 +396,30 @@ BEGIN;
 
 ALTER TABLE app_8b514_languages 
 ADD COLUMN IF NOT EXISTS exclusion_rules JSONB DEFAULT '[]'::jsonb;
+
+COMMIT;
+    `;
+  }
+
+  private getLanguageStatusMigration(): string {
+    return `
+BEGIN;
+
+-- Add status column with default value 'active'
+ALTER TABLE app_8b514_languages 
+ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active' 
+CHECK (status IN ('active', 'in_progress', 'inactive', 'dead'));
+
+-- Update existing languages to have 'active' status if NULL
+UPDATE app_8b514_languages 
+SET status = 'active' 
+WHERE status IS NULL;
+
+-- Add index for status column for efficient filtering
+CREATE INDEX IF NOT EXISTS idx_languages_status ON app_8b514_languages(status);
+
+-- Composite index for user_id and status for dashboard queries
+CREATE INDEX IF NOT EXISTS idx_languages_user_status ON app_8b514_languages(user_id, status);
 
 COMMIT;
     `;

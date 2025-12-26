@@ -8,6 +8,7 @@ import { useAuthStore } from '@/lib/auth-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
@@ -35,6 +36,7 @@ import {
   BookOpen,
   Sparkles,
   AlertCircle,
+  BarChart3,
 } from 'lucide-react';
 import { PhonologicalFeatureSelector, AVAILABLE_FEATURES } from '@/components/PhonologicalFeatureSelector';
 import { SyllableRulesSelector } from '@/components/SyllableRulesSelector';
@@ -54,6 +56,7 @@ import {
 
 const languageSchema = z.object({
   name: z.string().min(1, 'Language name is required').max(100, 'Language name must be less than 100 characters'),
+  status: z.enum(['active', 'in_progress', 'inactive', 'dead']).optional(),
   consonants: z.string().min(1, 'At least one consonant is required'),
   vowels: z.string().min(1, 'At least one vowel is required'),
   syllables: z.string().min(1, 'Syllable structure is required'),
@@ -66,6 +69,7 @@ interface Language {
   id: string;
   user_id: string;
   name: string;
+  status?: 'active' | 'in_progress' | 'inactive' | 'dead';
   phonemes: {
     consonants: string[];
     vowels: string[];
@@ -122,6 +126,7 @@ export default function LanguageDetail() {
     resolver: zodResolver(languageSchema),
     defaultValues: {
       name: '',
+      status: 'active',
       consonants: '',
       vowels: '',
       syllables: 'CV',
@@ -239,6 +244,7 @@ export default function LanguageDetail() {
 
       form.reset({
         name: data.name,
+        status: data.status || 'active',
         consonants: (data.phonemes.consonants || []).join(' '),
         vowels: (data.phonemes.vowels || []).join(' '),
         syllables: data.syllables,
@@ -415,6 +421,7 @@ export default function LanguageDetail() {
     try {
       const updateData = {
         name: data.name,
+        status: data.status || 'active',
         phonemes: {
           consonants: consonantTags,
           vowels: vowelTags,
@@ -459,6 +466,46 @@ export default function LanguageDetail() {
       console.error('Error deleting language:', error);
       const message = error instanceof Error ? error.message : 'Failed to delete language';
       toast.error(message);
+    }
+  };
+
+  const getStatusBadge = (status?: string) => {
+    switch (status) {
+      case 'active':
+        return (
+          <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full font-bold shadow-lg">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            Active
+          </div>
+        );
+      case 'in_progress':
+        return (
+          <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-full font-bold shadow-lg">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            In Progress
+          </div>
+        );
+      case 'inactive':
+        return (
+          <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full font-bold shadow-lg">
+            <div className="w-2 h-2 bg-white rounded-full" />
+            Inactive
+          </div>
+        );
+      case 'dead':
+        return (
+          <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-full font-bold shadow-lg">
+            <div className="w-2 h-2 bg-white rounded-full" />
+            Dead
+          </div>
+        );
+      default:
+        return (
+          <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full font-bold shadow-lg">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            Active
+          </div>
+        );
     }
   };
 
@@ -553,6 +600,34 @@ export default function LanguageDetail() {
             </AlertDialog>
           </div>
         </div>
+
+        {/* Menu Bar */}
+        <Card className="mb-8 relative overflow-hidden bg-white/80 border-2 border-[#DDBCEE]/40 rounded-3xl shadow-lg backdrop-blur-sm">
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                <Button
+                  onClick={() => navigate(`/language/${id}/words`)}
+                  className="bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] hover:opacity-90 text-white font-bold rounded-full px-8 py-3 shadow-lg shadow-[#F269BF]/40 hover:shadow-[#F269BF]/60 hover:scale-105 transition-all duration-300 w-full sm:w-auto"
+                >
+                  <BookOpen className="mr-2 h-5 w-5" />
+                  {wordCount === 0 ? 'Add First Word' : 'Manage Lexicon'}
+                </Button>
+                <Button
+                  onClick={() => navigate(`/language/${id}/analytics`)}
+                  variant="outline"
+                  className="border-2 border-[#A1FBFC] text-[#748BF6] hover:bg-[#A1FBFC]/20 hover:border-[#748BF6] rounded-full px-8 py-3 font-bold shadow-lg hover:scale-105 transition-all duration-300 w-full sm:w-auto"
+                >
+                  <BarChart3 className="mr-2 h-5 w-5" />
+                  Analytics
+                </Button>
+              </div>
+              <div className="flex items-center">
+                {getStatusBadge(language?.status)}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid gap-6 md:grid-cols-3 mb-8">
           <Card className="group relative overflow-hidden bg-white/70 border-2 border-[#A1FBFC]/40 hover:border-[#A1FBFC] rounded-3xl transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#A1FBFC]/30 backdrop-blur-sm">
@@ -655,6 +730,40 @@ export default function LanguageDetail() {
                             className="bg-white border-2 border-[#DDBCEE]/40 focus:border-[#748BF6] text-slate-800 placeholder:text-slate-400 rounded-xl h-11"
                           />
                         </FormControl>
+                        <FormMessage className="text-red-500 text-xs" />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-slate-700 font-medium text-sm">
+                          Language Status
+                        </FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="bg-white border-2 border-[#DDBCEE]/40 focus:border-[#748BF6] text-slate-800 rounded-xl h-11">
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-white border-2 border-[#DDBCEE]/40 rounded-xl">
+                            <SelectItem value="active" className="text-slate-800 focus:bg-[#DDBCEE]/20">
+                              🟢 Active - Currently being used
+                            </SelectItem>
+                            <SelectItem value="in_progress" className="text-slate-800 focus:bg-[#DDBCEE]/20">
+                              🟡 In Progress - Under development
+                            </SelectItem>
+                            <SelectItem value="inactive" className="text-slate-800 focus:bg-[#DDBCEE]/20">
+                              🔵 Inactive - Not currently used
+                            </SelectItem>
+                            <SelectItem value="dead" className="text-slate-800 focus:bg-[#DDBCEE]/20">
+                              🔴 Dead - No longer developed
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage className="text-red-500 text-xs" />
                       </FormItem>
                     )}
@@ -1402,41 +1511,6 @@ export default function LanguageDetail() {
                     </Alert>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-
-            <Card className="relative overflow-hidden bg-gradient-to-br from-[#DDBCEE]/30 via-[#F269BF]/20 to-[#F5B485]/30 border-2 border-[#F269BF]/30 rounded-3xl shadow-xl backdrop-blur-sm">
-              <div className="absolute top-0 left-0 w-64 h-64 bg-[#A1FBFC]/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-              <div className="absolute bottom-0 right-0 w-64 h-64 bg-[#748BF6]/20 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
-              <CardHeader className="relative border-b border-[#F269BF]/20">
-                <CardTitle className="flex items-center gap-3 text-slate-800">
-                  <div className="w-12 h-12 bg-gradient-to-br from-[#748BF6] via-[#F269BF] to-[#F5B485] rounded-2xl flex items-center justify-center shadow-lg shadow-[#F269BF]/40 rotate-3">
-                    <BookOpen className="h-6 w-6 text-white" />
-                  </div>
-                  Lexicon Management
-                </CardTitle>
-                <CardDescription className="text-slate-600">
-                  Manage words in this language ✨
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="relative">
-                <div className="text-center py-12">
-                  <div className="w-20 h-20 bg-gradient-to-br from-[#748BF6] via-[#F269BF] to-[#F5B485] rounded-3xl flex items-center justify-center shadow-xl shadow-[#F269BF]/40 mx-auto mb-6 rotate-6">
-                    <BookOpen className="h-10 w-10 text-white" />
-                  </div>
-                  <p className="text-slate-600 mb-6 text-lg font-medium">
-                    {wordCount === 0
-                      ? 'No words yet. Start building your lexicon! ✨'
-                      : `${wordCount} words in your lexicon`}
-                  </p>
-                  <Button
-                    onClick={() => navigate(`/language/${id}/words`)}
-                    className="bg-gradient-to-r from-[#748BF6] via-[#F269BF] to-[#F5B485] hover:opacity-90 text-white font-bold rounded-full px-10 py-6 shadow-xl shadow-[#F269BF]/40 hover:shadow-[#F269BF]/60 hover:scale-105 transition-all duration-300"
-                  >
-                    <BookOpen className="mr-2 h-5 w-5" />
-                    {wordCount === 0 ? 'Add First Word' : 'Manage Lexicon'}
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           </div>

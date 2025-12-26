@@ -14,6 +14,7 @@ import Dashboard from './pages/Dashboard';
 import LanguageSetup from './pages/LanguageSetup';
 import LanguageDetail from './pages/LanguageDetail';
 import LexiconManager from './pages/LexiconManager';
+import Analytics from './pages/Analytics';
 import EtymologyTree from './pages/EtymologyTree';
 import NotFound from './pages/NotFound';
 import { AlertCircle, Star, Heart } from 'lucide-react';
@@ -133,6 +134,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <LexiconManager />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/language/:id/analytics"
+                element={
+                  <ProtectedRoute>
+                    <Analytics />
                   </ProtectedRoute>
                 }
               />

@@ -21,6 +21,7 @@ import {
 interface Language {
   id: string;
   name: string;
+  status?: 'active' | 'in_progress' | 'inactive' | 'dead';
   phonemes: {
     consonants: string[];
     vowels: string[];
@@ -81,6 +82,41 @@ export default function Dashboard() {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to send verification email';
       toast.error(message);
+    }
+  };
+
+  const getStatusBadge = (status?: string) => {
+    switch (status) {
+      case 'active':
+        return (
+          <Badge className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0 font-bold rounded-full px-3">
+            🟢 Active
+          </Badge>
+        );
+      case 'in_progress':
+        return (
+          <Badge className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white border-0 font-bold rounded-full px-3">
+            🟡 In Progress
+          </Badge>
+        );
+      case 'inactive':
+        return (
+          <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0 font-bold rounded-full px-3">
+            🔵 Inactive
+          </Badge>
+        );
+      case 'dead':
+        return (
+          <Badge className="bg-gradient-to-r from-red-500 to-red-600 text-white border-0 font-bold rounded-full px-3">
+            🔴 Dead
+          </Badge>
+        );
+      default:
+        return (
+          <Badge className="bg-gradient-to-r from-[#748BF6] to-[#F269BF] text-white border-0 font-bold rounded-full px-3">
+            🟢 Active
+          </Badge>
+        );
     }
   };
 
@@ -316,9 +352,7 @@ export default function Dashboard() {
                           Created {new Date(language.created_at).toLocaleDateString()}
                         </CardDescription>
                       </div>
-                      <Badge className="bg-gradient-to-r from-[#748BF6] to-[#F269BF] text-white border-0 font-bold rounded-full px-3">
-                        Active
-                      </Badge>
+                      {getStatusBadge(language.status)}
                     </div>
                   </CardHeader>
 

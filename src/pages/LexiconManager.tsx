@@ -10,6 +10,7 @@ import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { IPAInput } from '@/components/IPAInput';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
@@ -986,21 +987,22 @@ export default function LexiconManager() {
                               <FormItem className="flex-1">
                                 <FormLabel>IPA Notation</FormLabel>
                                 <FormControl>
-                                  <Input
+                                  <IPAInput
                                     placeholder="e.g., θalɔr"
-                                    {...field}
-                                    onChange={(e) => {
-                                      field.onChange(e);
+                                    value={field.value}
+                                    onChange={(value) => {
+                                      field.onChange(value);
                                       // Auto-convert to alphabet
-                                      const alphabetValue = convertIPAToAlphabet(e.target.value);
+                                      const alphabetValue = convertIPAToAlphabet(value);
                                       form.setValue('word', alphabetValue);
                                     }}
+                                    className="bg-white border-2 border-[#DDBCEE]/40 focus:border-[#748BF6] text-slate-800 placeholder:text-slate-400 rounded-xl h-11"
                                   />
                                 </FormControl>
                                 <FormDescription className="text-xs">
                                   Type IPA - alphabet will auto-fill. Use{' '}
                                   <code className="text-purple-600">/</code> to split syllables
-                                  (e.g., θa/lɔr)
+                                  (e.g., θa/lɔr). Click 🔊 to hear pronunciation.
                                 </FormDescription>
                                 <FormMessage />
                               </FormItem>

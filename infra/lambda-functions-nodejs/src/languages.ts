@@ -108,16 +108,18 @@ async function createLanguage(languageData: any): Promise<APIGatewayProxyResult>
   const syllableRules = languageData.syllable_rules || {};
   const exclusionRules = languageData.exclusion_rules || [];
   const rules = languageData.rules || '';
+  const status = languageData.status || 'active';
 
   const query = `
-    INSERT INTO app_8b514_languages (user_id, name, phonemes, alphabet_mappings, syllables, syllable_rules, exclusion_rules, rules)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    INSERT INTO app_8b514_languages (user_id, name, status, phonemes, alphabet_mappings, syllables, syllable_rules, exclusion_rules, rules)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     RETURNING *
   `;
 
   const result = await executeQuery(query, [
     languageData.user_id,
     languageData.name,
+    status,
     JSON.stringify(phonemes),
     JSON.stringify(alphabetMappings),
     syllables,
@@ -171,6 +173,11 @@ async function updateLanguage(languageId: string, languageData: any): Promise<AP
   if (languageData.rules !== undefined) {
     updateFields.push(`rules = $${paramIndex++}`);
     params.push(languageData.rules);
+  }
+
+  if (languageData.status !== undefined) {
+    updateFields.push(`status = $${paramIndex++}`);
+    params.push(languageData.status);
   }
 
   if (!updateFields.length) {

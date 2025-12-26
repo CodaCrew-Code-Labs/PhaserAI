@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS app_8b514_languages (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id TEXT REFERENCES app_8b514_users(user_id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
+  status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'in_progress', 'inactive', 'dead')),
   phonemes JSONB NOT NULL DEFAULT '{"consonants":[],"vowels":[],"diphthongs":[]}'::jsonb,
   alphabet_mappings JSONB NOT NULL DEFAULT '{"consonants":{},"vowels":{},"diphthongs":{}}'::jsonb,
   syllables TEXT NOT NULL DEFAULT 'CV',
@@ -37,6 +38,9 @@ CREATE TABLE IF NOT EXISTS app_8b514_languages (
 
 COMMENT ON COLUMN app_8b514_languages.alphabet_mappings IS 
 'Stores mapping between alphabet letters and IPA phonemes. Structure: {"consonants": {"p": "p", "th": "θ"}, "vowels": {"a": "a", "e": "e"}, "diphthongs": {"ai": "ai"}}';
+
+COMMENT ON COLUMN app_8b514_languages.status IS 
+'Development status of the language: active, in_progress, inactive, or dead';
 
 -- Words table
 CREATE TABLE IF NOT EXISTS app_8b514_words (
@@ -99,6 +103,8 @@ CREATE TABLE IF NOT EXISTS app_8b514_phonological_violations (
 
 -- Core table indexes
 CREATE INDEX IF NOT EXISTS idx_languages_user_id ON app_8b514_languages(user_id);
+CREATE INDEX IF NOT EXISTS idx_languages_status ON app_8b514_languages(status);
+CREATE INDEX IF NOT EXISTS idx_languages_user_status ON app_8b514_languages(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_words_language_id ON app_8b514_words(language_id);
 CREATE INDEX IF NOT EXISTS idx_words_is_root ON app_8b514_words(is_root);
 CREATE INDEX IF NOT EXISTS idx_translations_word_id ON app_8b514_translations(word_id);
